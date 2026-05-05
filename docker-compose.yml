@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: celesma-db
+    environment:
+      POSTGRES_DB: celesma_db
+      POSTGRES_USER: celesma_user
+      POSTGRES_PASSWORD: celesma_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U celesma_user -d celesma_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: celesma-api
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/celesma_db
+      SPRING_DATASOURCE_USERNAME: celesma_user
+      SPRING_DATASOURCE_PASSWORD: celesma_password
+      JWT_SECRET: dev-secret-key-at-least-32-characters-long
+      GOOGLE_CLIENT_ID: dev-client-id
+      GOOGLE_CLIENT_SECRET: dev-client-secret
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
