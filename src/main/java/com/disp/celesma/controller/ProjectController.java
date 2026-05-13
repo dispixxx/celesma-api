@@ -2,6 +2,7 @@ package com.disp.celesma.controller;
 
 import com.disp.celesma.dto.project.ProjectRequest;
 import com.disp.celesma.dto.project.ProjectResponse;
+import com.disp.celesma.dto.project.RoleUpdateRequest;
 import com.disp.celesma.security.UserPrincipal;
 import com.disp.celesma.service.interfaces.IProjectService;
 import jakarta.validation.Valid;
@@ -113,5 +114,24 @@ public class ProjectController {
             @AuthenticationPrincipal UserPrincipal principal) {
         projectService.cancelJoinRequest(projectId, principal.getUser());
         return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/{projectId}/members/{memberId}/role")
+    public ResponseEntity<Void> updateMemberRole(
+            @PathVariable Long projectId,
+            @PathVariable Long memberId,
+            @RequestBody RoleUpdateRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        projectService.updateMemberRole(projectId, memberId, request.getRole(), principal.getUser());
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{projectId}/members/{memberId}")
+    public ResponseEntity<Void> removeMember(
+            @PathVariable Long projectId,
+            @PathVariable Long memberId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        projectService.removeMember(projectId, memberId, principal.getUser());
+        return ResponseEntity.noContent().build();
     }
 }

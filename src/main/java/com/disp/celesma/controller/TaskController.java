@@ -44,7 +44,8 @@ public class TaskController {
             @PathVariable Long taskId,
             @Valid @RequestBody TaskRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(taskService.updateTask(taskId, request, principal.getUser()));
+        var projectId = taskService.getTaskEntityById(taskId).getProject().getId();
+        return ResponseEntity.ok(taskService.updateTask(taskId, request, principal.getUser(), projectId));
     }
 
     @PatchMapping("/api/v1/tasks/{taskId}/status")
@@ -52,7 +53,8 @@ public class TaskController {
             @PathVariable Long taskId,
             @Valid @RequestBody TaskStatusRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(taskService.changeStatus(taskId, request.status(), principal.getUser()));
+        var projectId = taskService.getTaskEntityById(taskId).getProject().getId();
+        return ResponseEntity.ok(taskService.changeStatus(taskId, request.status(), principal.getUser(), projectId));
     }
 
     @DeleteMapping("/api/v1/tasks/{taskId}")

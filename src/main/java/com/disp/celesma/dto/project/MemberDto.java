@@ -10,14 +10,17 @@ public record MemberDto(
         Long memberId,
         UserSummaryDto user,
         ProjectRole role,
-        LocalDate joinedAt
+        LocalDate joinedAt,
+        boolean isOwner
 ) {
     public static MemberDto from(ProjectMember m) {
+        boolean isOwner = m.getProject().getOwnerUser().getId().equals(m.getUser().getId());
         return new MemberDto(
                 m.getId(),
                 UserSummaryDto.from(m.getUser()),
                 m.getRole(),
-                m.getJoinedAt()
+                m.getJoinedAt(),
+                isOwner
         );
     }
 }

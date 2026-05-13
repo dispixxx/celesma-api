@@ -25,4 +25,6 @@ public interface IProjectService {
     void acceptApplicant(Long projectId, Long userId, User caller);
     void declineApplicant(Long projectId, Long userId, User caller);
     ProjectResponse getProjectResponse(Long projectId, User user);
+    void updateMemberRole(Long projectId, Long memberId, ProjectRole newRole, User caller);
+    void removeMember(Long projectId, Long memberId, User caller);
 }

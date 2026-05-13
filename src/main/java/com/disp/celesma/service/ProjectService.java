@@ -7,9 +7,10 @@ import com.disp.celesma.model.Project;
 import com.disp.celesma.model.ProjectMember;
 import com.disp.celesma.model.User;
 import com.disp.celesma.model.enums.ProjectRole;
-import com.disp.celesma.repository.ProjectMemberRepository;
 import com.disp.celesma.repository.ProjectRepository;
+import com.disp.celesma.service.interfaces.IProjectMemberService;
 import com.disp.celesma.service.interfaces.IProjectService;
+import com.disp.celesma.service.interfaces.ITaskService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,8 @@ import java.util.*;
 public class ProjectService implements IProjectService {
 
     private final ProjectRepository projectRepository;
-    private final ProjectMemberRepository projectMemberRepository;
+    private final IProjectMemberService projectMemberService;
+    private final ITaskService taskService;
 
     private static final Map<ProjectRole, Integer> ROLE_ORDER = Map.of(
             ProjectRole.ADMIN, 1,
@@ -32,7 +34,6 @@ public class ProjectService implements IProjectService {
             ProjectRole.VIEWER, 4
     );
 
-    // Сортировка участников: по роли, затем по дате вступления
     private List<MemberDto> getSortedMembers(Project project) {
         return project.getMembers().stream()
                 .sorted(Comparator
@@ -73,7 +74,7 @@ public class ProjectService implements IProjectService {
     @Override
     @Transactional(readOnly = true)
     public List<ProjectResponse> getUserProjects(User user) {
-        return projectMemberRepository.findByUser(user).stream()
+        return projectMemberService.getAllByUser(user).stream()
                 .map(m -> ProjectResponse.from(m.getProject(), m.getRole()))
                 .toList();
     }
@@ -81,22 +82,20 @@ public class ProjectService implements IProjectService {
     @Override
     @Transactional(readOnly = true)
     public ProjectRole getUserRole(Long projectId, Long userId) {
-        return projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .map(ProjectMember::getRole)
-                .orElse(ProjectRole.VIEWER);
+        return projectMemberService.getUserRole(projectId, userId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean isUserMember(Long projectId, Long userId) {
-        return projectMemberRepository.existsByProjectIdAndUserId(projectId, userId);
+        return projectMemberService.existsByProjectIdAndUserId(projectId, userId);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ProjectResponse> searchProjects(User user, String query) {
         return projectRepository.findByNameContainingIgnoreCase(query).stream()
-                .map(p -> ProjectResponse.from(p, getUserRole(p.getId(), user.getId())))
+                .map(p -> ProjectResponse.from(p, projectMemberService.getUserRole(p.getId(), user.getId())))
                 .toList();
     }
 
@@ -119,8 +118,7 @@ public class ProjectService implements IProjectService {
         if (user.equals(project.getOwnerUser())) {
             throw new IllegalStateException("Владелец не может покинуть проект");
         }
-        var member = projectMemberRepository.findByProjectIdAndUserId(projectId, user.getId())
-                .orElseThrow(() -> new EntityNotFoundException("Вы не участник проекта"));
+        var member = projectMemberService.getProjectMemberByProjectIdAndUserId(projectId, user.getId());
         project.getMembers().remove(member);
         projectRepository.save(project);
     }
@@ -129,7 +127,7 @@ public class ProjectService implements IProjectService {
     @Transactional
     public void addJoinRequest(Long projectId, User user) {
         var project = getProjectById(projectId);
-        if (projectMemberRepository.existsByProjectIdAndUserId(projectId, user.getId())) {
+        if (projectMemberService.existsByProjectIdAndUserId(projectId, user.getId())) {
             throw new IllegalStateException("Вы уже участник проекта");
         }
         if (project.getApplicants().contains(user)) {
@@ -151,8 +149,7 @@ public class ProjectService implements IProjectService {
     @Transactional
     public Project updateProject(Long projectId, User caller, ProjectRequest request) {
         var project = getProjectById(projectId);
-        var role = getUserRole(projectId, caller.getId());
-        if (role != ProjectRole.ADMIN && role != ProjectRole.MODERATOR) {
+        if (!projectMemberService.isPrivileged(projectId, caller.getId())) {
             throw new IllegalStateException("Нет прав для редактирования проекта");
         }
         project.setName(request.name());
@@ -163,8 +160,7 @@ public class ProjectService implements IProjectService {
     @Override
     @Transactional
     public void deleteProject(Long projectId, User caller) {
-        var role = getUserRole(projectId, caller.getId());
-        if (role != ProjectRole.ADMIN) {
+        if (projectMemberService.getUserRole(projectId, caller.getId()) != ProjectRole.ADMIN) {
             throw new IllegalStateException("Удалить проект может только ADMIN");
         }
         projectRepository.deleteById(projectId);
@@ -173,8 +169,7 @@ public class ProjectService implements IProjectService {
     @Override
     @Transactional
     public void acceptApplicant(Long projectId, Long userId, User caller) {
-        var role = getUserRole(projectId, caller.getId());
-        if (role != ProjectRole.ADMIN && role != ProjectRole.MODERATOR) {
+        if (!projectMemberService.isPrivileged(projectId, caller.getId())) {
             throw new IllegalStateException("Нет прав для принятия заявок");
         }
         var project = getProjectById(projectId);
@@ -196,8 +191,7 @@ public class ProjectService implements IProjectService {
     @Override
     @Transactional
     public void declineApplicant(Long projectId, Long userId, User caller) {
-        var role = getUserRole(projectId, caller.getId());
-        if (role != ProjectRole.ADMIN && role != ProjectRole.MODERATOR) {
+        if (!projectMemberService.isPrivileged(projectId, caller.getId())) {
             throw new IllegalStateException("Нет прав для отклонения заявок");
         }
         var project = getProjectById(projectId);
@@ -205,13 +199,64 @@ public class ProjectService implements IProjectService {
         projectRepository.save(project);
     }
 
-    // Используется в ProjectController для получения проекта с сортированными участниками
+    @Override
     @Transactional(readOnly = true)
     public ProjectResponse getProjectResponse(Long projectId, User caller) {
         var project = getProjectById(projectId);
-        var role = getUserRole(projectId, caller.getId());
+        var role = projectMemberService.getUserRole(projectId, caller.getId());
         var isApplicant = project.getApplicants().contains(caller);
         var members = getSortedMembers(project);
         return ProjectResponse.from(project, role, isApplicant, members);
+    }
+
+    @Override
+    @Transactional
+    public void updateMemberRole(Long projectId, Long memberId, ProjectRole newRole, User caller) {
+        if (!projectMemberService.isPrivileged(projectId, caller.getId())) {
+            throw new IllegalStateException("Нет прав для изменения ролей");
+        }
+
+        var member = projectMemberService.getProjectMemberById(memberId);
+
+        if (!member.getProject().getId().equals(projectId)) {
+            throw new IllegalStateException("Участник не принадлежит этому проекту");
+        }
+
+        var project = getProjectById(projectId);
+        if (member.getUser().getId().equals(project.getOwnerUser().getId())) {
+            throw new IllegalStateException("Нельзя изменить роль владельца проекта");
+        }
+
+        if (projectMemberService.getUserRole(projectId, caller.getId()) == ProjectRole.MODERATOR
+                && newRole == ProjectRole.ADMIN) {
+            throw new IllegalStateException("Модератор не может назначать администраторов");
+        }
+
+        member.setRole(newRole);
+        projectMemberService.save(member);
+    }
+
+    @Override
+    @Transactional
+    public void removeMember(Long projectId, Long memberId, User caller) {
+        if (!projectMemberService.isPrivileged(projectId, caller.getId())) {
+            throw new IllegalStateException("Нет прав для удаления участников");
+        }
+
+        var member = projectMemberService.getProjectMemberById(memberId);
+
+        if (!member.getProject().getId().equals(projectId)) {
+            throw new IllegalStateException("Участник не принадлежит этому проекту");
+        }
+
+        var project = getProjectById(projectId);
+        if (member.getUser().getId().equals(project.getOwnerUser().getId())) {
+            throw new IllegalStateException("Нельзя удалить владельца проекта");
+        }
+
+        project.getMembers().remove(member);
+        projectRepository.save(project);
+
+        taskService.reassignAndHoldTasks(projectId, member.getUser().getId(), caller);
     }
 }

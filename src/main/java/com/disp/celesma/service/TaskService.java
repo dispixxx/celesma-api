@@ -7,9 +7,9 @@ import com.disp.celesma.event.TaskStatusChangedEvent;
 import com.disp.celesma.model.Task;
 import com.disp.celesma.model.User;
 import com.disp.celesma.model.enums.TaskStatus;
+import com.disp.celesma.repository.ProjectRepository;
 import com.disp.celesma.repository.TaskRepository;
-import com.disp.celesma.repository.UserRepository;
-import com.disp.celesma.service.interfaces.IProjectService;
+import com.disp.celesma.service.interfaces.IProjectMemberService;
 import com.disp.celesma.service.interfaces.ITaskService;
 import com.disp.celesma.service.interfaces.IUserService;
 import jakarta.persistence.EntityNotFoundException;
@@ -27,14 +27,16 @@ import java.util.List;
 public class TaskService implements ITaskService {
 
     private final TaskRepository taskRepository;
-    private final IProjectService projectService;
+    private final ProjectRepository projectRepository;
+    private final IProjectMemberService projectMemberService;
     private final ApplicationEventPublisher eventPublisher;
     private final IUserService userService;
 
     @Override
     @Transactional
     public TaskResponse createTask(Long projectId, User creator, TaskRequest request) {
-        var project = projectService.getProjectById(projectId);
+        var project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new EntityNotFoundException("Project %d not found".formatted(projectId)));
         var assignee = userService.getUserById(request.assigneeId());
 
         var task = Task.builder()
@@ -75,10 +77,9 @@ public class TaskService implements ITaskService {
 
     @Override
     @Transactional
-    public TaskResponse updateTask(Long taskId, TaskRequest request, User caller) {
+    public TaskResponse updateTask(Long taskId, TaskRequest request, User caller, Long projectId) {
         var task = findById(taskId);
-
-        if (!canModify(task, caller)) {
+        if (!canModify(task, caller, projectId)) {
             throw new AccessDeniedException("Нет прав для редактирования задачи");
         }
 
@@ -95,13 +96,13 @@ public class TaskService implements ITaskService {
 
     @Override
     @Transactional
-    public TaskResponse changeStatus(Long taskId, TaskStatus newStatus, User caller) {
+    public TaskResponse changeStatus(Long taskId, TaskStatus newStatus, User caller, Long projectId) {
         var task = findById(taskId);
         var oldStatus = task.getStatus();
 
         if (oldStatus == newStatus) return TaskResponse.from(task);
 
-        if (!canModify(task, caller)) {
+        if (!canModify(task, caller, projectId)) {
             throw new AccessDeniedException("Нет прав для изменения статуса задачи");
         }
 
@@ -124,16 +125,26 @@ public class TaskService implements ITaskService {
         taskRepository.deleteById(taskId);
     }
 
+    @Override
+    @Transactional
+    public void reassignAndHoldTasks(Long projectId, Long fromUserId, User toUser) {
+        var tasks = taskRepository.findByProjectIdAndAssigneeId(projectId, fromUserId);
+        tasks.forEach(t -> {
+            t.setAssignee(toUser);
+            t.setStatus(TaskStatus.ON_HOLD);
+        });
+        taskRepository.saveAll(tasks);
+    }
+
     private Task findById(Long taskId) {
         return taskRepository.findById(taskId)
                 .orElseThrow(() -> new EntityNotFoundException("Task %d not found".formatted(taskId)));
     }
 
-    private boolean canModify(Task task, User caller) {
-        return task.getCreator().getId().equals(caller.getId())
-                || (task.getAssignee() != null && task.getAssignee().getId().equals(caller.getId()))
-                || projectService.getUserRole(task.getProject().getId(), caller.getId())
-                        .ordinal() <= 1; // ADMIN или MODERATOR
+    private boolean canModify(Task task, User caller, Long projectId) {
+        return projectMemberService.isPrivileged(projectId, caller.getId())
+                || task.getCreator().getId().equals(caller.getId())
+                || (task.getAssignee() != null && task.getAssignee().getId().equals(caller.getId()));
     }
 
     private boolean isTerminalStatus(TaskStatus status) {
