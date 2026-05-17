@@ -1,9 +1,11 @@
 package com.disp.celesma.controller;
 
+import com.disp.celesma.dto.common.AiTitleRequest;
 import com.disp.celesma.dto.task.TaskRequest;
 import com.disp.celesma.dto.task.TaskResponse;
 import com.disp.celesma.dto.task.TaskStatusRequest;
 import com.disp.celesma.security.UserPrincipal;
+import com.disp.celesma.service.interfaces.IAiService;
 import com.disp.celesma.service.interfaces.ITaskService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import java.util.List;
 public class TaskController {
 
     private final ITaskService taskService;
+    private final IAiService aiService;
 
     @GetMapping("/api/v1/projects/{projectId}/tasks")
     public ResponseEntity<List<TaskResponse>> getProjectTasks(@PathVariable Long projectId) {
@@ -61,5 +64,17 @@ public class TaskController {
     public ResponseEntity<Void> deleteTask(@PathVariable Long taskId) {
         taskService.deleteTask(taskId);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Генерирует название задачи через AI (DeepSeek) на основе описания.
+     * Эндпоинт вызывается с фронтенда при нажатии кнопки
+     * "Сгенерировать AI название задачи" в форме создания/редактирования.
+     */
+    @PostMapping("/api/v1/tasks/generate-title")
+    public ResponseEntity<String> generateTitle(
+            @Valid @RequestBody AiTitleRequest request) {
+        String title = aiService.generateAiTitle(request.getDescription());
+        return ResponseEntity.ok(title);
     }
 }

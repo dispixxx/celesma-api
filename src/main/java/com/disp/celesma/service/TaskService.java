@@ -152,4 +152,5 @@ public class TaskService implements ITaskService {
                 || status == TaskStatus.CANCELED
                 || status == TaskStatus.ON_HOLD;
     }
+
 }
