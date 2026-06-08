@@ -1,8 +1,10 @@
 package com.disp.celesma.controller;
 
-import com.disp.celesma.dto.project.ProjectRequest;
-import com.disp.celesma.dto.project.ProjectResponse;
-import com.disp.celesma.dto.project.RoleUpdateRequest;
+import com.disp.celesma.dto.project.ProjectCreateRequest;
+import com.disp.celesma.dto.project.ProjectResponseDto;
+import com.disp.celesma.dto.project.ProjectUpdateRequest;
+import com.disp.celesma.mapper.ProjectMapper;
+import com.disp.celesma.model.Project;
 import com.disp.celesma.security.UserPrincipal;
 import com.disp.celesma.service.interfaces.IProjectService;
 import jakarta.validation.Valid;
@@ -22,35 +24,37 @@ public class ProjectController {
     private final IProjectService projectService;
 
     @GetMapping
-    public ResponseEntity<List<ProjectResponse>> getUserProjects(
+    public ResponseEntity<List<ProjectResponseDto>> getUserProjects(
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(projectService.getUserProjects(principal.getUser()));
+        List<ProjectResponseDto> projects = projectService.getUserProjects(principal.getUser());
+
+        return ResponseEntity.ok(projects);
     }
 
     @GetMapping("/{projectId}")
-    public ResponseEntity<ProjectResponse> getProject(
+    public ResponseEntity<ProjectResponseDto> getProject(
             @PathVariable Long projectId,
             @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(projectService.getProjectResponse(projectId, principal.getUser()));
+        ProjectResponseDto project = projectService.getProjectById(projectId);
+        return ResponseEntity.ok(project);
     }
 
     @PostMapping
-    public ResponseEntity<ProjectResponse> createProject(
-            @Valid @RequestBody ProjectRequest request,
+    public ResponseEntity<ProjectResponseDto> createProject(
+            @Valid @RequestBody ProjectCreateRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
-        var project = projectService.createProject(principal.getUser(), request);
-        var response = ProjectResponse.from(project, projectService.getUserRole(project.getId(), principal.getId()));
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        ProjectResponseDto created = projectService.createProjectAndSave(principal.getUser(), request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{projectId}")
-    public ResponseEntity<ProjectResponse> updateProject(
+    public ResponseEntity<ProjectResponseDto> updateProject(
             @PathVariable Long projectId,
-            @Valid @RequestBody ProjectRequest request,
+            @Valid @RequestBody ProjectUpdateRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
-        var project = projectService.updateProject(projectId, principal.getUser(), request);
-        var role = projectService.getUserRole(projectId, principal.getId());
-        return ResponseEntity.ok(ProjectResponse.from(project, role));
+        ProjectResponseDto project = projectService.updateProjectAndSave(projectId, principal.getUser(), request);
+
+        return ResponseEntity.ok(project);
     }
 
     @DeleteMapping("/{projectId}")
@@ -61,45 +65,48 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<ProjectResponseDto>> searchProjects(
+            @RequestParam String q,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(projectService.searchProjects(principal.getUser(), q));
+    }
+
+    //    TODO
+    /* В PROJECT MEMBER CONTROLLER*/
+/*    @Deprecated
     @GetMapping("/{projectId}/applicants")
     public ResponseEntity<?> getApplicants(
             @PathVariable Long projectId) {
         return ResponseEntity.ok(projectService.getApplicants(projectId));
-    }
+    }*/
 
-    @PostMapping("/{projectId}/applicants/{userId}/accept")
+/*    @PostMapping("/{projectId}/applicants/{userId}/accept")
     public ResponseEntity<Void> acceptApplicant(
             @PathVariable Long projectId,
             @PathVariable Long userId,
             @AuthenticationPrincipal UserPrincipal principal) {
         projectService.acceptApplicant(projectId, userId, principal.getUser());
         return ResponseEntity.ok().build();
-    }
+    }*/
 
-    @DeleteMapping("/{projectId}/applicants/{userId}")
+/*    @DeleteMapping("/{projectId}/applicants/{userId}")
     public ResponseEntity<Void> declineApplicant(
             @PathVariable Long projectId,
             @PathVariable Long userId,
             @AuthenticationPrincipal UserPrincipal principal) {
         projectService.declineApplicant(projectId, userId, principal.getUser());
         return ResponseEntity.ok().build();
-    }
+    }*/
 
-    @GetMapping("/search")
-    public ResponseEntity<List<ProjectResponse>> searchProjects(
-            @RequestParam String q,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        return ResponseEntity.ok(projectService.searchProjects(principal.getUser(), q));
-    }
-
-    @PostMapping("/{projectId}/exit")
+/*    @PostMapping("/{projectId}/exit")
     public ResponseEntity<Void> exitProject(
             @PathVariable Long projectId,
             @AuthenticationPrincipal UserPrincipal principal) {
         projectService.exitFromProject(projectId, principal.getUser());
         return ResponseEntity.ok().build();
-    }
-
+    }*/
+/*
     @PostMapping("/{projectId}/join")
     public ResponseEntity<Void> joinRequest(
             @PathVariable Long projectId,
@@ -114,9 +121,9 @@ public class ProjectController {
             @AuthenticationPrincipal UserPrincipal principal) {
         projectService.cancelJoinRequest(projectId, principal.getUser());
         return ResponseEntity.ok().build();
-    }
+    }*/
 
-    @PutMapping("/{projectId}/members/{memberId}/role")
+/*    @PutMapping("/{projectId}/members/{memberId}/role")
     public ResponseEntity<Void> updateMemberRole(
             @PathVariable Long projectId,
             @PathVariable Long memberId,
@@ -133,5 +140,5 @@ public class ProjectController {
             @AuthenticationPrincipal UserPrincipal principal) {
         projectService.removeMember(projectId, memberId, principal.getUser());
         return ResponseEntity.noContent().build();
-    }
+    }*/
 }

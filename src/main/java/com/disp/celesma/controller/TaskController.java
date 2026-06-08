@@ -1,5 +1,6 @@
 package com.disp.celesma.controller;
 
+import com.disp.celesma.dto.common.AiDescriptionRequest;
 import com.disp.celesma.dto.common.AiTitleRequest;
 import com.disp.celesma.dto.task.TaskRequest;
 import com.disp.celesma.dto.task.TaskResponse;
@@ -18,63 +19,87 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/v1")
 public class TaskController {
 
     private final ITaskService taskService;
     private final IAiService aiService;
 
-    @GetMapping("/api/v1/projects/{projectId}/tasks")
-    public ResponseEntity<List<TaskResponse>> getProjectTasks(@PathVariable Long projectId) {
+    // ─────────────────────────────────────────────
+    // Задачи через проект
+    // ─────────────────────────────────────────────
+
+    @GetMapping("/projects/{projectId}/tasks")
+    public ResponseEntity<List<TaskResponse>> getProjectTasks(
+            @PathVariable Long projectId) {
         return ResponseEntity.ok(taskService.getTasksByProject(projectId));
     }
 
-    @PostMapping("/api/v1/projects/{projectId}/tasks")
+    @PostMapping("/projects/{projectId}/tasks")
     public ResponseEntity<TaskResponse> createTask(
             @PathVariable Long projectId,
             @Valid @RequestBody TaskRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(taskService.createTask(projectId, principal.getUser(), request));
+                .body(taskService.createTaskAndSave(projectId, principal.getUser(), request));
     }
 
-    @GetMapping("/api/v1/tasks/{taskId}")
-    public ResponseEntity<TaskResponse> getTask(@PathVariable Long taskId) {
+    // ─────────────────────────────────────────────
+    // Прямые операции с задачей по taskId
+    // ─────────────────────────────────────────────
+
+    @GetMapping("/tasks/{taskId}")
+    public ResponseEntity<TaskResponse> getTask(
+            @PathVariable Long taskId) {
         return ResponseEntity.ok(taskService.getTaskById(taskId));
     }
 
-    @PutMapping("/api/v1/tasks/{taskId}")
+    @PutMapping("/tasks/{taskId}")
     public ResponseEntity<TaskResponse> updateTask(
             @PathVariable Long taskId,
             @Valid @RequestBody TaskRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
-        var projectId = taskService.getTaskEntityById(taskId).getProject().getId();
-        return ResponseEntity.ok(taskService.updateTask(taskId, request, principal.getUser(), projectId));
+        // projectId не нужен в контроллере — сервис получит его сам при загрузке задачи
+        return ResponseEntity.ok(taskService.updateTask(taskId, request, principal.getUser()));
     }
 
-    @PatchMapping("/api/v1/tasks/{taskId}/status")
+    @PatchMapping("/tasks/{taskId}/status")
     public ResponseEntity<TaskResponse> changeStatus(
             @PathVariable Long taskId,
             @Valid @RequestBody TaskStatusRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
-        var projectId = taskService.getTaskEntityById(taskId).getProject().getId();
-        return ResponseEntity.ok(taskService.changeStatus(taskId, request.status(), principal.getUser(), projectId));
+        return ResponseEntity.ok(
+                taskService.changeStatus(taskId, request.status(), principal.getUser()));
     }
 
-    @DeleteMapping("/api/v1/tasks/{taskId}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long taskId) {
+    @DeleteMapping("/tasks/{taskId}")
+    public ResponseEntity<Void> deleteTask(
+            @PathVariable Long taskId) {
         taskService.deleteTask(taskId);
         return ResponseEntity.noContent().build();
     }
 
+    // ─────────────────────────────────────────────
+    // AI-генерация
+    // ─────────────────────────────────────────────
+
     /**
-     * Генерирует название задачи через AI (DeepSeek) на основе описания.
-     * Эндпоинт вызывается с фронтенда при нажатии кнопки
-     * "Сгенерировать AI название задачи" в форме создания/редактирования.
+     * Генерирует название задачи через AI на основе описания.
      */
-    @PostMapping("/api/v1/tasks/generate-title")
+    @PostMapping("/tasks/generate-title")
     public ResponseEntity<String> generateTitle(
             @Valid @RequestBody AiTitleRequest request) {
-        String title = aiService.generateAiTitle(request.getDescription());
-        return ResponseEntity.ok(title);
+        return ResponseEntity.ok(aiService.generateAiTitle(request.getDescription()));
+    }
+
+    /**
+     * Универсальная AI-обработка описания задачи.
+     * Поддерживает действия: TITLE, IMPROVE, FORMALIZE, SUBTASKS.
+     */
+    @PostMapping("/tasks/ai-process")
+    public ResponseEntity<String> aiProcessDescription(
+            @Valid @RequestBody AiDescriptionRequest request) {
+        return ResponseEntity.ok(
+                aiService.processDescription(request.getDescription(), request.getAction()));
     }
 }

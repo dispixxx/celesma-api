@@ -39,7 +39,7 @@ public class RoadmapService implements IRoadmapService {
 
     @Override
     public RoadmapBranch createBranch(String name, Long projectId) {
-        var project = projectService.getProjectById(projectId);
+        var project = projectService.getProjectEntityById(projectId);
         var branch = RoadmapBranch.builder()
                 .name(name)
                 .project(project)

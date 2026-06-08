@@ -3,7 +3,7 @@ package com.disp.celesma.dto.project;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-public record ProjectRequest(
+public record ProjectCreateRequest(
         @NotBlank(message = "Название не может быть пустым")
         @Size(max = 100)
         String name,

@@ -4,6 +4,7 @@ import com.disp.celesma.dto.task.TaskRequest;
 import com.disp.celesma.dto.task.TaskResponse;
 import com.disp.celesma.event.TaskCreatedEvent;
 import com.disp.celesma.event.TaskStatusChangedEvent;
+import com.disp.celesma.mapper.TaskMapper;
 import com.disp.celesma.model.Task;
 import com.disp.celesma.model.User;
 import com.disp.celesma.model.enums.TaskStatus;
@@ -28,16 +29,29 @@ public class TaskService implements ITaskService {
 
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
+
     private final IProjectMemberService projectMemberService;
-    private final ApplicationEventPublisher eventPublisher;
     private final IUserService userService;
+
+    private final ApplicationEventPublisher eventPublisher;
+    private final TaskMapper taskMapper;
+
+
+    @Override
+    public Task getTaskEntityById(Long taskId) {
+        return taskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Task %d not found".formatted(taskId)));
+    }
+
 
     @Override
     @Transactional
-    public TaskResponse createTask(Long projectId, User creator, TaskRequest request) {
+    public TaskResponse createTaskAndSave(Long projectId, User creator, TaskRequest request) {
         var project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new EntityNotFoundException("Project %d not found".formatted(projectId)));
-        var assignee = userService.getUserById(request.assigneeId());
+        var assignee = userService.getUserEntityById(request.assigneeId());
+
+        projectMemberService.validateIsMember(projectId, assignee.getId());
 
         var task = Task.builder()
                 .title(request.title())
@@ -52,38 +66,22 @@ public class TaskService implements ITaskService {
 
         var saved = taskRepository.save(task);
         eventPublisher.publishEvent(new TaskCreatedEvent(this, saved));
-        return TaskResponse.from(saved);
+        return taskMapper.toResponse(saved);
     }
 
     @Override
     @Transactional(readOnly = true)
     public TaskResponse getTaskById(Long taskId) {
-        return TaskResponse.from(findById(taskId));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public Task getTaskEntityById(Long taskId) {
-        return findById(taskId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TaskResponse> getTasksByProject(Long projectId) {
-        return taskRepository.findByProjectId(projectId).stream()
-                .map(TaskResponse::from)
-                .toList();
+        return taskMapper.toResponse(getTaskEntityById(taskId));
     }
 
     @Override
     @Transactional
-    public TaskResponse updateTask(Long taskId, TaskRequest request, User caller, Long projectId) {
-        var task = findById(taskId);
-        if (!canModify(task, caller, projectId)) {
-            throw new AccessDeniedException("Нет прав для редактирования задачи");
-        }
+    public TaskResponse updateTask(Long taskId, TaskRequest request, User caller) {
+        var task = getTaskEntityById(taskId);
+        checkModifyAccess(task, caller);
 
-        var assignee = userService.getUserById(request.assigneeId());
+        var assignee = userService.getUserEntityById(request.assigneeId());
 
         task.setTitle(request.title());
         task.setDescription(request.description());
@@ -91,20 +89,26 @@ public class TaskService implements ITaskService {
         task.setPriority(request.priority());
         task.setEndDate(request.endDate());
 
-        return TaskResponse.from(taskRepository.save(task));
+        return taskMapper.toResponse(taskRepository.save(task));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TaskResponse> getTasksByProject(Long projectId) {
+        return taskRepository.findByProjectId(projectId).stream()
+                .map(taskMapper::toResponse)
+                .toList();
     }
 
     @Override
     @Transactional
-    public TaskResponse changeStatus(Long taskId, TaskStatus newStatus, User caller, Long projectId) {
-        var task = findById(taskId);
+    public TaskResponse changeStatus(Long taskId, TaskStatus newStatus, User caller) {
+        var task = getTaskEntityById(taskId);
         var oldStatus = task.getStatus();
 
-        if (oldStatus == newStatus) return TaskResponse.from(task);
+        if (oldStatus == newStatus) return taskMapper.toResponse(task);
 
-        if (!canModify(task, caller, projectId)) {
-            throw new AccessDeniedException("Нет прав для изменения статуса задачи");
-        }
+        checkModifyAccess(task, caller);
 
         if (newStatus == TaskStatus.COMPLETED) {
             task.setReviewedBy(caller);
@@ -116,9 +120,10 @@ public class TaskService implements ITaskService {
         var saved = taskRepository.save(task);
 
         eventPublisher.publishEvent(new TaskStatusChangedEvent(this, saved, oldStatus, newStatus));
-        return TaskResponse.from(saved);
+        return taskMapper.toResponse(saved);
     }
 
+    //TODO: VALIDATE AND PROTECT FROM DELETING TASKS BY NON PRIVILEGED USERS
     @Override
     @Transactional
     public void deleteTask(Long taskId) {
@@ -136,15 +141,18 @@ public class TaskService implements ITaskService {
         taskRepository.saveAll(tasks);
     }
 
-    private Task findById(Long taskId) {
-        return taskRepository.findById(taskId)
-                .orElseThrow(() -> new EntityNotFoundException("Task %d not found".formatted(taskId)));
-    }
+    // ─────────────────────────────────────────────
+    // Вспомогательные методы
+    // ─────────────────────────────────────────────
 
-    private boolean canModify(Task task, User caller, Long projectId) {
-        return projectMemberService.isPrivileged(projectId, caller.getId())
+    private void checkModifyAccess(Task task, User caller) {
+        var projectId = task.getProject().getId();
+        boolean allowed = projectMemberService.isPrivileged(projectId, caller.getId())
                 || task.getCreator().getId().equals(caller.getId())
                 || (task.getAssignee() != null && task.getAssignee().getId().equals(caller.getId()));
+        if (!allowed) {
+            throw new AccessDeniedException("Нет прав для изменения задачи");
+        }
     }
 
     private boolean isTerminalStatus(TaskStatus status) {
@@ -152,5 +160,4 @@ public class TaskService implements ITaskService {
                 || status == TaskStatus.CANCELED
                 || status == TaskStatus.ON_HOLD;
     }
-
 }

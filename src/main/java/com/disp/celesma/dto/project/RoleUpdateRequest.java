@@ -8,4 +8,6 @@ import lombok.Data;
 public class RoleUpdateRequest {
     @NotNull(message = "Role is required")
     private ProjectRole role;
+    @NotNull(message = "Project ID is required")
+    private Long ProjectId;
 }

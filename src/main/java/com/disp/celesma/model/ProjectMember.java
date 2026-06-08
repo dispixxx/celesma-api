@@ -4,7 +4,7 @@ import com.disp.celesma.model.enums.ProjectRole;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "project_members")
@@ -33,6 +33,8 @@ public class ProjectMember {
     @Column(nullable = false)
     private ProjectRole role;
 
+    @Getter
     @Column(name = "joined_at")
-    private LocalDate joinedAt;
+    private LocalDateTime joinedAt;
+
 }

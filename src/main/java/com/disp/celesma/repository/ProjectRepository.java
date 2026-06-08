@@ -13,7 +13,6 @@ import java.util.Optional;
 @Repository
 public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByNameContainingIgnoreCase(String query);
-    List<Project> findByApplicantsContaining(User user);
 
     @EntityGraph(attributePaths = {"ownerUser", "members", "members.user", "applicants"})
     @Query("SELECT p FROM Project p WHERE p.id = :id")

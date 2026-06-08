@@ -9,12 +9,19 @@ import com.disp.celesma.model.enums.TaskStatus;
 import java.util.List;
 
 public interface ITaskService {
-    TaskResponse createTask(Long projectId, User creator, TaskRequest request);
+    TaskResponse createTaskAndSave(Long projectId, User creator, TaskRequest request);
+
     TaskResponse getTaskById(Long taskId);
+
     Task getTaskEntityById(Long taskId);
+
     List<TaskResponse> getTasksByProject(Long projectId);
-    TaskResponse updateTask(Long taskId, TaskRequest request, User caller, Long projectId);
-    TaskResponse changeStatus(Long taskId, TaskStatus newStatus, User caller, Long projectId);
+
+    TaskResponse updateTask(Long taskId, TaskRequest request, User caller);
+
+    TaskResponse changeStatus(Long taskId, TaskStatus newStatus, User caller);
+
     void deleteTask(Long taskId);
+
     void reassignAndHoldTasks(Long projectId, Long fromUserId, User toUser);
 }

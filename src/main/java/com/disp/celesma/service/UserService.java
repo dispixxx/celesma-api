@@ -1,5 +1,9 @@
 package com.disp.celesma.service;
 
+import com.disp.celesma.dto.auth.RegisterRequest;
+import com.disp.celesma.dto.user.UserResponseDto;
+import com.disp.celesma.dto.user.UserUpdateProfileRequest;
+import com.disp.celesma.mapper.UserMapper;
 import com.disp.celesma.model.User;
 import com.disp.celesma.repository.UserRepository;
 import com.disp.celesma.service.interfaces.IUserService;
@@ -17,18 +21,77 @@ public class UserService implements IUserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserMapper userMapper;
 
+    /**
+     * Creates a new user from the registration request and persists it to the database.
+     * Validates that the username and email are unique before saving.
+     *
+     * @param request the registration request containing user details (nickname, email, password, firstName, lastName)
+     * @return the saved {@link User} entity with encoded password, ROLE_USER role, and current date as registration date
+     * @throws IllegalStateException if the nickname or email is already taken
+     */
     @Override
-    public User getUserByUsername(String username) {
+    @Transactional
+    public User createUserAndSave(RegisterRequest request) {
+        // Validate uniqueness of username and email
+        if (userRepository.existsByUsername(request.nickname()))
+            throw new IllegalStateException("Никнейм уже занят: " + request.nickname());
+        if (userRepository.existsByEmail(request.email()))
+            throw new IllegalStateException("Email уже занят: " + request.email());
+
+        // Build and save the new user entity with encoded password and default role
+        return userRepository.save(User.builder()
+                .username(request.nickname())
+                .email(request.email())
+                .password(passwordEncoder.encode(request.password()))
+                .firstName(request.firstName())
+                .lastName(request.lastName())
+                .role("ROLE_USER")
+                .registrationDate(LocalDate.now())
+                .build());
+
+
+    }
+
+    /**
+     * Retrieves a {@link User} entity from the database by username.
+     *
+     * @param username the username to search for
+     * @return the found {@link User} entity
+     * @throws UsernameNotFoundException if no user exists with the given username
+     */
+    @Override
+    public User getUserEntityByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
     }
 
+    /**
+     * Retrieves a user by username and returns it as a response DTO.
+     *
+     * @param username the username to search for
+     * @return the {@link UserResponseDto} mapped from the found user entity
+     * @throws UsernameNotFoundException if no user exists with the given username
+     */
     @Override
-    public User getUserById(Long id) {
+    public UserResponseDto getUserByUsername(String username) {
+        return userMapper.toResponseDto(getUserEntityByUsername(username));
+    }
+
+
+    @Override
+    public User getUserEntityById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + id));
     }
+
+    @Override
+    public UserResponseDto getUserById(Long uid) {
+        return userMapper.toResponseDto(getUserEntityById(uid));
+
+    }
+
 
     @Override
     public User getUserByEmail(String email) {
@@ -45,34 +108,9 @@ public class UserService implements IUserService {
     public boolean existsByUsername(String username) {
         return userRepository.existsByUsername(username);
     }
-
-    @Override
-    public boolean existsById(Long id) {
-        return userRepository.existsById(id);
-    }
-
-    @Override
+/*    @Override
     @Transactional
-    public User create(String email, String rawPassword, String firstName, String lastName, String nickname) {
-        if (userRepository.existsByUsername(nickname))
-            throw new IllegalStateException("Никнейм уже занят: " + nickname);
-        if (userRepository.existsByEmail(email))
-            throw new IllegalStateException("Email уже занят: " + email);
-
-        return userRepository.save(User.builder()
-                .username(nickname)
-                .email(email)
-                .password(passwordEncoder.encode(rawPassword))
-                .role("ROLE_USER")
-                .firstName(firstName)
-                .lastName(lastName)
-                .registrationDate(LocalDate.now())
-                .build());
-    }
-
-    @Override
-    @Transactional
-    public User createOAuthUser(String email, String firstName, String lastName, String avatarUrl) {
+    public User createOAuthUserAndSave(String email, String firstName, String lastName, String avatarUrl) {
         String username = email.split("@")[0];
         return userRepository.save(User.builder()
                 .username(username)
@@ -84,10 +122,20 @@ public class UserService implements IUserService {
                 .avatarUrl(avatarUrl)
                 .registrationDate(LocalDate.now())
                 .build());
+    }*/
+
+    @Override
+    public User save(User user) {
+        return userRepository.save(user);
     }
 
     @Override
-    public void save(User user) {
-        userRepository.save(user);
+    public UserResponseDto updateUserProfileAndSave(User user, UserUpdateProfileRequest request) {
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
+        user.setBio(request.bio());
+        var saved = save(user);
+        return userMapper.toResponseDto(saved);
     }
+
 }
