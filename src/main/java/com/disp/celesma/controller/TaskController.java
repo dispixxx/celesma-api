@@ -59,7 +59,6 @@ public class TaskController {
             @PathVariable Long taskId,
             @Valid @RequestBody TaskRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
-        // projectId не нужен в контроллере — сервис получит его сам при загрузке задачи
         return ResponseEntity.ok(taskService.updateTask(taskId, request, principal.getUser()));
     }
 

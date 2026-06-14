@@ -1,7 +1,6 @@
 package com.disp.celesma.service;
 
 import com.disp.celesma.dto.applicant.ApplicantResponseDto;
-import com.disp.celesma.dto.member.MemberResponseDto;
 import com.disp.celesma.dto.project.ProjectCreateRequest;
 import com.disp.celesma.dto.project.ProjectResponseDto;
 import com.disp.celesma.dto.project.ProjectUpdateRequest;
@@ -14,7 +13,6 @@ import com.disp.celesma.model.enums.ProjectRole;
 import com.disp.celesma.repository.ProjectRepository;
 import com.disp.celesma.service.interfaces.IProjectMemberService;
 import com.disp.celesma.service.interfaces.IProjectService;
-import com.disp.celesma.service.interfaces.ITaskService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+
 
 @Service
 @RequiredArgsConstructor
@@ -32,11 +30,9 @@ public class ProjectService implements IProjectService {
     private final ProjectRepository projectRepository;
 
     private final IProjectMemberService projectMemberService;
-    private final ITaskService taskService;
 
     private final ProjectMapper projectMapper;
     private final UserMapper userMapper;
-
 
 
     @Override
@@ -75,19 +71,6 @@ public class ProjectService implements IProjectService {
         savedProject.getMembers().add(savedMember);
         return projectMapper.toResponse(savedProject);
     }
-
-    private List<MemberResponseDto> getSortedMembers(Project project) {
-        /*return project.getMembers().stream()
-                .sorted(Comparator
-                        .<ProjectMember, Integer>comparing(m -> ROLE_ORDER.getOrDefault(m.getRole(), 99))
-                        .thenComparing(m -> m.getJoinedAt() != null ? m.getJoinedAt() : LocalDate.MIN))
-                .map(MemberDto::from)
-                .toList();
-
-        projectMemberService.getSortedMembers(project.getId());*/
-        return null;
-    }
-
 
     /**
      * Для получаения проектов, в которых учавствует пользователь

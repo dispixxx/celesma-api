@@ -1,4 +1,4 @@
-package com.disp.celesma.dto.project;
+package com.disp.celesma.dto.member;
 
 import com.disp.celesma.model.enums.ProjectRole;
 import jakarta.validation.constraints.NotNull;

@@ -1,7 +1,7 @@
 package com.disp.celesma.controller;
 
 import com.disp.celesma.dto.member.MemberResponseDto;
-import com.disp.celesma.dto.project.RoleUpdateRequest;
+import com.disp.celesma.dto.member.RoleUpdateRequest;
 import com.disp.celesma.security.UserPrincipal;
 import com.disp.celesma.service.interfaces.IProjectMemberService;
 import lombok.AllArgsConstructor;
@@ -17,24 +17,6 @@ import java.util.List;
 public class ProjectMemberController {
 
     private final IProjectMemberService projectMemberService;
-
-/*    @PostMapping
-    public ResponseEntity<Void> addMember(
-            @PathVariable Long projectId,
-            @RequestBody AddMemberRequest request,
-            @AuthenticationPrincipal UserPrincipal principal) {
-
-        projectMemberService.createAndAddMemberToProject();
-        return ResponseEntity.status(HttpStatus.CREATED).build();
-    }*/
-
-/*    @GetMapping
-    public ResponseEntity<List<MemberResponseDto>> getMembers(
-            @PathVariable Long projectId,
-            @AuthenticationPrincipal UserPrincipal principal) {
-
-        return ResponseEntity.ok(projectMemberService.getMembers(projectId, principal.getUser()));
-    }*/
 
     @GetMapping
     public ResponseEntity<List<MemberResponseDto>> getMembers(
@@ -63,11 +45,12 @@ public class ProjectMemberController {
         return ResponseEntity.noContent().build();
     }
 
-/*    @PostMapping("/{memberId}/exit")
+    @PostMapping("/{memberId}/exit")
     public ResponseEntity<Void> exitProject(
             @PathVariable Long projectId,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        projectMemberService.exitFromProject(projectId, principal.getUser());
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long memberId) {
+        projectMemberService.exitFromProject(projectId, principal.getUser(), memberId);
         return ResponseEntity.ok().build();
-    }*/
+    }
 }

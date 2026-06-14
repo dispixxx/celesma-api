@@ -15,7 +15,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -38,9 +37,14 @@ public class ProjectMemberService implements IProjectMemberService {
     );
 
 
-    private Project projectEntityPickerById(Long projectId) {
+    private Project getProjectEntityOrThrow(Long projectId) {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new EntityNotFoundException("Project %d not found".formatted(projectId)));
+    }
+
+    public ProjectMember getProjectMemberEntityById(Long memberId) {
+        return projectMemberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Project member not found with ID: " + memberId));
     }
 
     @Override
@@ -77,13 +81,15 @@ public class ProjectMemberService implements IProjectMemberService {
         return projectMemberRepository.existsByProjectIdAndUserId(projectId, userId);
     }
 
+
+    //TODO /* APPLICANT SERVICE */
     @Transactional
     public MemberResponseDto acceptApplicant(Long projectId, Long userId, User caller) {
         if (!isPrivileged(projectId, caller.getId())) {
             throw new AccessDeniedException("Нет прав для принятия заявок");
         }
 
-        var project = projectEntityPickerById(projectId);
+        var project = getProjectEntityOrThrow(projectId);
 
         var applicant = project.getApplicants().stream()
                 .filter(u -> u.getId().equals(userId))
@@ -97,13 +103,14 @@ public class ProjectMemberService implements IProjectMemberService {
         return memberMapper.toResponse(member);
     }
 
+    //TODO /* APPLICANT SERVICE */
     @Transactional
     public void declineApplicant(Long projectId, Long userId, User caller) {
         if (!isPrivileged(projectId, caller.getId())) {
             throw new AccessDeniedException("Нет прав для отклонения заявок");
         }
 
-        var project = projectEntityPickerById(projectId);
+        var project = getProjectEntityOrThrow(projectId);
 
         project.getApplicants().removeIf(u -> u.getId().equals(userId));
         projectRepository.save(project);
@@ -133,11 +140,6 @@ public class ProjectMemberService implements IProjectMemberService {
     }
 
 
-    public ProjectMember getProjectMemberEntityById(Long memberId) {
-        return projectMemberRepository.findById(memberId)
-                .orElseThrow(() -> new IllegalArgumentException("Project member not found with ID: " + memberId));
-    }
-
     @Override
     @Transactional(readOnly = true)
     public MemberResponseDto getProjectMemberById(Long memberId) {
@@ -160,7 +162,7 @@ public class ProjectMemberService implements IProjectMemberService {
     @Transactional(readOnly = true)
     public List<MemberResponseDto> getSortedMembersByProjectId(Long projectId) {
 
-        var project = projectEntityPickerById(projectId);
+        var project = getProjectEntityOrThrow(projectId);
 
         return project.getMembers().stream()
                 .sorted(Comparator
@@ -205,13 +207,11 @@ public class ProjectMemberService implements IProjectMemberService {
         }
 
         var member = getProjectMemberEntityById(memberId);
+        var project = member.getProject();
 
         if (!member.getProject().getId().equals(projectId)) {
             throw new IllegalStateException("Участник не принадлежит этому проекту");
         }
-
-        var project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new EntityNotFoundException("Project %d not found".formatted(projectId)));
 
         if (member.getRole() == ProjectRole.OWNER) {
             throw new IllegalStateException("Нельзя удалить владельца проекта");
@@ -224,6 +224,23 @@ public class ProjectMemberService implements IProjectMemberService {
         project.getMembers().remove(member);
         projectRepository.save(project);
 
-//        taskService.reassignAndHoldTasks(projectId, member.getUser().getId(), caller);
+        //  taskService.reassignAndHoldTasks(projectId, member.getUser().getId(), caller);
+    }
+
+    @Transactional
+    @Override
+    public void exitFromProject(Long projectId, User user, Long memberId) {
+
+        var member = getProjectMemberEntityById(memberId);
+        var project = member.getProject();
+
+        if (member.getRole() == ProjectRole.OWNER) {
+            throw new IllegalStateException("Нельзя выйти. ВЫ ВЛАДЕЛЕЦ ПРОЕКТА");
+        }
+
+        project.getMembers().remove(member);
+        projectRepository.save(project);
+
+        //  taskService.reassignAndHoldTasks(projectId, member.getUser().getId(), caller);
     }
 }

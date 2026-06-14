@@ -3,8 +3,6 @@ package com.disp.celesma.controller;
 import com.disp.celesma.dto.project.ProjectCreateRequest;
 import com.disp.celesma.dto.project.ProjectResponseDto;
 import com.disp.celesma.dto.project.ProjectUpdateRequest;
-import com.disp.celesma.mapper.ProjectMapper;
-import com.disp.celesma.model.Project;
 import com.disp.celesma.security.UserPrincipal;
 import com.disp.celesma.service.interfaces.IProjectService;
 import jakarta.validation.Valid;
@@ -71,74 +69,4 @@ public class ProjectController {
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(projectService.searchProjects(principal.getUser(), q));
     }
-
-    //    TODO
-    /* В PROJECT MEMBER CONTROLLER*/
-/*    @Deprecated
-    @GetMapping("/{projectId}/applicants")
-    public ResponseEntity<?> getApplicants(
-            @PathVariable Long projectId) {
-        return ResponseEntity.ok(projectService.getApplicants(projectId));
-    }*/
-
-/*    @PostMapping("/{projectId}/applicants/{userId}/accept")
-    public ResponseEntity<Void> acceptApplicant(
-            @PathVariable Long projectId,
-            @PathVariable Long userId,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        projectService.acceptApplicant(projectId, userId, principal.getUser());
-        return ResponseEntity.ok().build();
-    }*/
-
-/*    @DeleteMapping("/{projectId}/applicants/{userId}")
-    public ResponseEntity<Void> declineApplicant(
-            @PathVariable Long projectId,
-            @PathVariable Long userId,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        projectService.declineApplicant(projectId, userId, principal.getUser());
-        return ResponseEntity.ok().build();
-    }*/
-
-/*    @PostMapping("/{projectId}/exit")
-    public ResponseEntity<Void> exitProject(
-            @PathVariable Long projectId,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        projectService.exitFromProject(projectId, principal.getUser());
-        return ResponseEntity.ok().build();
-    }*/
-/*
-    @PostMapping("/{projectId}/join")
-    public ResponseEntity<Void> joinRequest(
-            @PathVariable Long projectId,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        projectService.addJoinRequest(projectId, principal.getUser());
-        return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping("/{projectId}/join")
-    public ResponseEntity<Void> cancelJoinRequest(
-            @PathVariable Long projectId,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        projectService.cancelJoinRequest(projectId, principal.getUser());
-        return ResponseEntity.ok().build();
-    }*/
-
-/*    @PutMapping("/{projectId}/members/{memberId}/role")
-    public ResponseEntity<Void> updateMemberRole(
-            @PathVariable Long projectId,
-            @PathVariable Long memberId,
-            @RequestBody RoleUpdateRequest request,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        projectService.updateMemberRole(projectId, memberId, request.getRole(), principal.getUser());
-        return ResponseEntity.ok().build();
-    }
-
-    @DeleteMapping("/{projectId}/members/{memberId}")
-    public ResponseEntity<Void> removeMember(
-            @PathVariable Long projectId,
-            @PathVariable Long memberId,
-            @AuthenticationPrincipal UserPrincipal principal) {
-        projectService.removeMember(projectId, memberId, principal.getUser());
-        return ResponseEntity.noContent().build();
-    }*/
 }
