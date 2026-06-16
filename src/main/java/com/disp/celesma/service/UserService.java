@@ -1,7 +1,7 @@
 package com.disp.celesma.service;
 
 import com.disp.celesma.dto.auth.RegisterRequest;
-import com.disp.celesma.dto.user.UserResponseDto;
+import com.disp.celesma.dto.user.UserResponse;
 import com.disp.celesma.dto.user.UserUpdateProfileRequest;
 import com.disp.celesma.mapper.UserMapper;
 import com.disp.celesma.model.User;
@@ -71,11 +71,11 @@ public class UserService implements IUserService {
      * Retrieves a user by username and returns it as a response DTO.
      *
      * @param username the username to search for
-     * @return the {@link UserResponseDto} mapped from the found user entity
+     * @return the {@link UserResponse} mapped from the found user entity
      * @throws UsernameNotFoundException if no user exists with the given username
      */
     @Override
-    public UserResponseDto getUserByUsername(String username) {
+    public UserResponse getUserByUsername(String username) {
         return userMapper.toResponseDto(getUserEntityByUsername(username));
     }
 
@@ -87,7 +87,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public UserResponseDto getUserById(Long uid) {
+    public UserResponse getUserById(Long uid) {
         return userMapper.toResponseDto(getUserEntityById(uid));
 
     }
@@ -130,7 +130,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public UserResponseDto updateUserProfileAndSave(User user, UserUpdateProfileRequest request) {
+    public UserResponse updateUserProfileAndSave(User user, UserUpdateProfileRequest request) {
         user.setFirstName(request.firstName());
         user.setLastName(request.lastName());
         user.setBio(request.bio());

@@ -1,8 +1,7 @@
 package com.disp.celesma.controller;
 
-import com.disp.celesma.dto.user.UserResponseDto;
+import com.disp.celesma.dto.user.UserResponse;
 import com.disp.celesma.dto.user.UserUpdateProfileRequest;
-import com.disp.celesma.mapper.UserMapper;
 import com.disp.celesma.security.UserPrincipal;
 import com.disp.celesma.service.interfaces.IUserService;
 import lombok.RequiredArgsConstructor;
@@ -18,12 +17,12 @@ public class UserController {
     private final IUserService userService;
 
     @GetMapping("/{username}")
-    public ResponseEntity<UserResponseDto> getByUsername(@PathVariable String username) {
+    public ResponseEntity<UserResponse> getByUsername(@PathVariable String username) {
         return ResponseEntity.ok(userService.getUserByUsername(username));
     }
 
     @PutMapping("/profile")
-    public ResponseEntity<UserResponseDto> updateProfile(
+    public ResponseEntity<UserResponse> updateProfile(
             @RequestBody UserUpdateProfileRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
         var user = userService.updateUserProfileAndSave(principal.getUser(), request);

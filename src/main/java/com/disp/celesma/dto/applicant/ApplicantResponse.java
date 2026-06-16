@@ -1,12 +1,12 @@
 package com.disp.celesma.dto.applicant;
 
-import com.disp.celesma.dto.user.UserResponseDto;
+import com.disp.celesma.dto.user.UserResponse;
 
 import java.time.LocalDate;
 
-public record ApplicantResponseDto(
+public record ApplicantResponse(
         Long projectId,
-        UserResponseDto user,
+        UserResponse user,
         LocalDate requestAt
 
 ) {

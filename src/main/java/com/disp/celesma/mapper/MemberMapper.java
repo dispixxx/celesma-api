@@ -1,6 +1,6 @@
 package com.disp.celesma.mapper;
 
-import com.disp.celesma.dto.member.MemberResponseDto;
+import com.disp.celesma.dto.member.MemberResponse;
 import com.disp.celesma.model.ProjectMember;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -18,6 +18,6 @@ public interface MemberMapper {
     @Mapping(target = "user", source = "user")
     @Mapping(target = "role", source = "role")
     @Mapping(target = "joinedAt", source = "joinedAt")
-    MemberResponseDto toResponse(ProjectMember member);
+    MemberResponse toResponse(ProjectMember member);
 
 }

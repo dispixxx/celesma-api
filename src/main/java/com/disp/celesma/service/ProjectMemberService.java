@@ -1,6 +1,6 @@
 package com.disp.celesma.service;
 
-import com.disp.celesma.dto.member.MemberResponseDto;
+import com.disp.celesma.dto.member.MemberResponse;
 import com.disp.celesma.mapper.MemberMapper;
 import com.disp.celesma.model.Project;
 import com.disp.celesma.model.ProjectMember;
@@ -69,12 +69,13 @@ public class ProjectMemberService implements IProjectMemberService {
      * @param userId    the ID of the user whose membership is being validated
      */
     @Transactional(readOnly = true)
-    public void validateIsMember(Long projectId, Long userId) {
+    public boolean validateIsMember(Long projectId, Long userId) {
         if (!isMember(projectId, userId)) {
-            throw new IllegalArgumentException(
+            throw new AccessDeniedException(
                     "Пользователь %d не является участником проекта %d"
                             .formatted(userId, projectId));
         }
+        return true;
     }
 
     public boolean isMember(Long projectId, Long userId) {
@@ -84,7 +85,7 @@ public class ProjectMemberService implements IProjectMemberService {
 
     //TODO /* APPLICANT SERVICE */
     @Transactional
-    public MemberResponseDto acceptApplicant(Long projectId, Long userId, User caller) {
+    public MemberResponse acceptApplicant(Long projectId, Long userId, User caller) {
         if (!isPrivileged(projectId, caller.getId())) {
             throw new AccessDeniedException("Нет прав для принятия заявок");
         }
@@ -142,7 +143,7 @@ public class ProjectMemberService implements IProjectMemberService {
 
     @Override
     @Transactional(readOnly = true)
-    public MemberResponseDto getProjectMemberById(Long memberId) {
+    public MemberResponse getProjectMemberById(Long memberId) {
         return memberMapper.toResponse(getProjectMemberEntityById(memberId));
     }
 
@@ -160,7 +161,7 @@ public class ProjectMemberService implements IProjectMemberService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<MemberResponseDto> getSortedMembersByProjectId(Long projectId) {
+    public List<MemberResponse> getSortedMembersByProjectId(Long projectId) {
 
         var project = getProjectEntityOrThrow(projectId);
 
@@ -174,7 +175,7 @@ public class ProjectMemberService implements IProjectMemberService {
 
     @Transactional
     @Override
-    public MemberResponseDto updateMemberRole(User caller, Long projectId, Long memberId, ProjectRole newRole) {
+    public MemberResponse updateMemberRole(User caller, Long projectId, Long memberId, ProjectRole newRole) {
         if (!isPrivileged(projectId, caller.getId())) {
             throw new IllegalStateException("Нет прав для изменения ролей");
         }

@@ -1,10 +1,12 @@
 package com.disp.celesma.service;
 
-import com.disp.celesma.dto.task.TaskRequest;
+import com.disp.celesma.dto.task.TaskCreateRequest;
 import com.disp.celesma.dto.task.TaskResponse;
+import com.disp.celesma.dto.task.TaskUpdateRequest;
 import com.disp.celesma.event.TaskCreatedEvent;
 import com.disp.celesma.event.TaskStatusChangedEvent;
 import com.disp.celesma.mapper.TaskMapper;
+import com.disp.celesma.model.Project;
 import com.disp.celesma.model.Task;
 import com.disp.celesma.model.User;
 import com.disp.celesma.model.enums.TaskStatus;
@@ -30,6 +32,7 @@ public class TaskService implements ITaskService {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
 
+    private final TaskHistoryService taskHistoryService; //TODO INTERFACE ITaskHistoryService
     private final IProjectMemberService projectMemberService;
     private final IUserService userService;
 
@@ -37,18 +40,21 @@ public class TaskService implements ITaskService {
     private final TaskMapper taskMapper;
 
 
+    private Project getProjectEntityOrThrow(Long projectId) {
+        return projectRepository.findById(projectId)
+                .orElseThrow(() -> new EntityNotFoundException("Project %d not found".formatted(projectId)));
+    }
+
     @Override
     public Task getTaskEntityById(Long taskId) {
         return taskRepository.findById(taskId)
                 .orElseThrow(() -> new EntityNotFoundException("Task %d not found".formatted(taskId)));
     }
 
-
     @Override
     @Transactional
-    public TaskResponse createTaskAndSave(Long projectId, User creator, TaskRequest request) {
-        var project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new EntityNotFoundException("Project %d not found".formatted(projectId)));
+    public TaskResponse createTaskAndSave(Long projectId, User creator, TaskCreateRequest request) {
+        var project = getProjectEntityOrThrow(projectId);
         var assignee = userService.getUserEntityById(request.assigneeId());
 
         projectMemberService.validateIsMember(projectId, assignee.getId());
@@ -65,6 +71,8 @@ public class TaskService implements ITaskService {
                 .build();
 
         var saved = taskRepository.save(task);
+
+
         eventPublisher.publishEvent(new TaskCreatedEvent(this, saved));
         return taskMapper.toResponse(saved);
     }
@@ -77,11 +85,13 @@ public class TaskService implements ITaskService {
 
     @Override
     @Transactional
-    public TaskResponse updateTask(Long taskId, TaskRequest request, User caller) {
+    public TaskResponse updateTask(Long taskId, TaskUpdateRequest request, User caller) {
         var task = getTaskEntityById(taskId);
         checkModifyAccess(task, caller);
 
         var assignee = userService.getUserEntityById(request.assigneeId());
+
+        var changes = taskHistoryService.diffTask(task, request, assignee);
 
         task.setTitle(request.title());
         task.setDescription(request.description());
@@ -89,7 +99,13 @@ public class TaskService implements ITaskService {
         task.setPriority(request.priority());
         task.setEndDate(request.endDate());
 
-        return taskMapper.toResponse(taskRepository.save(task));
+        var saved = taskRepository.save(task);
+
+        if (!changes.isEmpty()) {
+            taskHistoryService.record(saved, caller, changes);
+        }
+
+        return taskMapper.toResponse(saved);
     }
 
     @Override

@@ -1,10 +1,9 @@
 package com.disp.celesma.controller;
 
-import com.disp.celesma.dto.applicant.ApplicantResponseDto;
-import com.disp.celesma.dto.member.MemberResponseDto;
+import com.disp.celesma.dto.applicant.ApplicantResponse;
+import com.disp.celesma.dto.member.MemberResponse;
 import com.disp.celesma.security.UserPrincipal;
 import com.disp.celesma.service.ProjectMemberService;
-import com.disp.celesma.service.interfaces.IProjectMemberService;
 import com.disp.celesma.service.interfaces.IProjectService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +20,7 @@ public class ProjectApplicantController {
     private final ProjectMemberService projectMemberService;
 
     @GetMapping
-    public ResponseEntity<List<ApplicantResponseDto>> getApplicants(
+    public ResponseEntity<List<ApplicantResponse>> getApplicants(
             @PathVariable Long projectId,
             @AuthenticationPrincipal UserPrincipal principal) {
         var response = projectService.getApplicants(projectId);
@@ -29,7 +28,7 @@ public class ProjectApplicantController {
     }
 
     @PostMapping("/join")
-    public ResponseEntity<ApplicantResponseDto> joinRequest(
+    public ResponseEntity<ApplicantResponse> joinRequest(
             @PathVariable Long projectId,
             @AuthenticationPrincipal UserPrincipal principal) {
         var response = projectService.addJoinRequest(projectId, principal.getUser());
@@ -46,7 +45,7 @@ public class ProjectApplicantController {
 
 
     @PostMapping("/{userId}/accept")
-    public ResponseEntity<MemberResponseDto> acceptApplicant(
+    public ResponseEntity<MemberResponse> acceptApplicant(
             @PathVariable Long projectId,
             @PathVariable Long userId,
             @AuthenticationPrincipal UserPrincipal principal) {

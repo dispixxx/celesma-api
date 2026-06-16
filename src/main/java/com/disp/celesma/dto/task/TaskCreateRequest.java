@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 
-public record TaskRequest(
+public record TaskCreateRequest(
         @NotBlank(message = "Укажите название")
         @Size(max = 255)
         String title,

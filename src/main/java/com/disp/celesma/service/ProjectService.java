@@ -1,8 +1,8 @@
 package com.disp.celesma.service;
 
-import com.disp.celesma.dto.applicant.ApplicantResponseDto;
+import com.disp.celesma.dto.applicant.ApplicantResponse;
 import com.disp.celesma.dto.project.ProjectCreateRequest;
-import com.disp.celesma.dto.project.ProjectResponseDto;
+import com.disp.celesma.dto.project.ProjectResponse;
 import com.disp.celesma.dto.project.ProjectUpdateRequest;
 import com.disp.celesma.mapper.ProjectMapper;
 import com.disp.celesma.mapper.UserMapper;
@@ -44,13 +44,13 @@ public class ProjectService implements IProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProjectResponseDto getProjectById(Long id) {
+    public ProjectResponse getProjectById(Long id) {
         return projectMapper.toResponse(getProjectEntityById(id));
     }
 
     @Override
     @Transactional
-    public ProjectResponseDto createProjectAndSave(User owner, ProjectCreateRequest request) {
+    public ProjectResponse createProjectAndSave(User owner, ProjectCreateRequest request) {
         // 1. Создаём только проект
         var project = Project.builder()
                 .name(request.name())
@@ -77,7 +77,7 @@ public class ProjectService implements IProjectService {
      **/
     @Override
     @Transactional(readOnly = true)
-    public List<ProjectResponseDto> getUserProjects(User user) {
+    public List<ProjectResponse> getUserProjects(User user) {
         return projectMemberService.getAllByUserWithProjectAndOwner(user).stream()
                 .map(ProjectMember::getProject)
                 .map(projectMapper::toResponse)
@@ -92,7 +92,7 @@ public class ProjectService implements IProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProjectResponseDto> searchProjects(User user, String query) {
+    public List<ProjectResponse> searchProjects(User user, String query) {
         return projectRepository.findByNameContainingIgnoreCase(query).stream()
                 .map(projectMapper::toResponse)
                 .toList();
@@ -106,10 +106,10 @@ public class ProjectService implements IProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ApplicantResponseDto> getApplicants(Long projectId) {
+    public List<ApplicantResponse> getApplicants(Long projectId) {
 
         return getProjectEntityById(projectId).getApplicants().stream()
-                .map(u -> new ApplicantResponseDto(projectId, userMapper.toResponseDto(u), LocalDate.now()))
+                .map(u -> new ApplicantResponse(projectId, userMapper.toResponseDto(u), LocalDate.now()))
                 .toList();
     }
 
@@ -127,7 +127,7 @@ public class ProjectService implements IProjectService {
 
     @Override
     @Transactional
-    public ApplicantResponseDto addJoinRequest(Long projectId, User user) {
+    public ApplicantResponse addJoinRequest(Long projectId, User user) {
         var project = getProjectEntityById(projectId);
         if (projectMemberService.isMember(projectId, user.getId())) {
             throw new IllegalStateException("Вы уже участник проекта");
@@ -137,7 +137,7 @@ public class ProjectService implements IProjectService {
         }
         project.getApplicants().add(user);
         projectRepository.save(project);
-        return new ApplicantResponseDto(projectId, userMapper.toResponseDto(user), LocalDate.now());
+        return new ApplicantResponse(projectId, userMapper.toResponseDto(user), LocalDate.now());
 
     }
 
@@ -151,7 +151,7 @@ public class ProjectService implements IProjectService {
 
     @Override
     @Transactional
-    public ProjectResponseDto updateProjectAndSave(Long projectId, User caller, ProjectUpdateRequest request) {
+    public ProjectResponse updateProjectAndSave(Long projectId, User caller, ProjectUpdateRequest request) {
         var project = getProjectEntityById(projectId);
         if (!projectMemberService.isPrivileged(projectId, caller.getId())) {
             throw new IllegalStateException("Нет прав для редактирования проекта");

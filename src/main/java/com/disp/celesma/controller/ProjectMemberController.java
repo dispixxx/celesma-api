@@ -1,11 +1,12 @@
 package com.disp.celesma.controller;
 
-import com.disp.celesma.dto.member.MemberResponseDto;
+import com.disp.celesma.dto.member.MemberResponse;
 import com.disp.celesma.dto.member.RoleUpdateRequest;
 import com.disp.celesma.security.UserPrincipal;
 import com.disp.celesma.service.interfaces.IProjectMemberService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +20,8 @@ public class ProjectMemberController {
     private final IProjectMemberService projectMemberService;
 
     @GetMapping
-    public ResponseEntity<List<MemberResponseDto>> getMembers(
+    @PreAuthorize("@projectSecurity.isMember(#projectId, principal)")
+    public ResponseEntity<List<MemberResponse>> getMembers(
             @PathVariable Long projectId,
             @AuthenticationPrincipal UserPrincipal principal) {
         var response = projectMemberService.getSortedMembersByProjectId(projectId);
@@ -27,7 +29,8 @@ public class ProjectMemberController {
     }
 
     @PutMapping("/{memberId}")
-    public ResponseEntity<MemberResponseDto> updateMemberRole(
+    @PreAuthorize("@projectSecurity.isMember(#projectId, principal)")
+    public ResponseEntity<MemberResponse> updateMemberRole(
             @PathVariable Long projectId, // 0_o
             @PathVariable Long memberId,
             @RequestBody RoleUpdateRequest request,
@@ -37,6 +40,7 @@ public class ProjectMemberController {
     }
 
     @DeleteMapping("/{memberId}")
+    @PreAuthorize("@projectSecurity.isMember(#projectId, principal)")
     public ResponseEntity<Void> removeMember(
             @PathVariable Long projectId,
             @PathVariable Long memberId,
@@ -46,6 +50,7 @@ public class ProjectMemberController {
     }
 
     @PostMapping("/{memberId}/exit")
+    @PreAuthorize("@projectSecurity.isMember(#projectId, principal)")
     public ResponseEntity<Void> exitProject(
             @PathVariable Long projectId,
             @AuthenticationPrincipal UserPrincipal principal,

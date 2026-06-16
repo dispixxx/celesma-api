@@ -1,6 +1,6 @@
 package com.disp.celesma.mapper;
 
-import com.disp.celesma.dto.user.UserResponseDto;
+import com.disp.celesma.dto.user.UserResponse;
 import com.disp.celesma.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -23,5 +23,5 @@ public interface UserMapper {
     @Mapping(target = "avatarUrl", source = "avatarUrl")
     @Mapping(target = "role", source = "role")
     @Mapping(target = "registrationDate", source = "registrationDate")
-    UserResponseDto toResponseDto(User user);
+    UserResponse toResponseDto(User user);
 }
