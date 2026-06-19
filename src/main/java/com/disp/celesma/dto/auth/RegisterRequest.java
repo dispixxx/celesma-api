@@ -10,4 +10,5 @@ public record RegisterRequest(
         @NotBlank(message = "Укажите имя") String firstName,
         @NotBlank(message = "Укажите фамилию") String lastName,
         @NotBlank @Size(min = 3, max = 20) String nickname
-) {}
+) {
+}

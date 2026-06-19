@@ -142,7 +142,9 @@ public class TaskService implements ITaskService {
     //TODO: VALIDATE AND PROTECT FROM DELETING TASKS BY NON PRIVILEGED USERS
     @Override
     @Transactional
-    public void deleteTask(Long taskId) {
+    public void deleteTask(Long taskId, User caller) {
+        checkDeleteAccess(getTaskEntityById(taskId), caller);
+        taskHistoryService.deleteAllByTaskId(taskId);
         taskRepository.deleteById(taskId);
     }
 
@@ -168,6 +170,14 @@ public class TaskService implements ITaskService {
                 || (task.getAssignee() != null && task.getAssignee().getId().equals(caller.getId()));
         if (!allowed) {
             throw new AccessDeniedException("Нет прав для изменения задачи");
+        }
+    }
+
+    private void checkDeleteAccess(Task task, User caller) {
+        var projectId = task.getProject().getId();
+        boolean allowed = projectMemberService.isPrivileged(projectId, caller.getId());
+        if (!allowed) {
+            throw new AccessDeniedException("Нет прав для удаления задачи");
         }
     }
 

@@ -7,8 +7,6 @@ import com.disp.celesma.model.Task;
 import com.disp.celesma.model.TaskHistory;
 import com.disp.celesma.model.User;
 import com.disp.celesma.repository.TaskHistoryRepository;
-import com.disp.celesma.repository.TaskRepository;
-import com.disp.celesma.service.interfaces.IProjectMemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -23,7 +21,6 @@ import java.util.Objects;
 public class TaskHistoryService {
 
     private final TaskHistoryRepository taskHistoryRepository;
-
 
     private final TaskHistoryMapper taskHistoryMapper;
 
@@ -54,7 +51,7 @@ public class TaskHistoryService {
         return changes.toString().replaceAll("; $", "");
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRED)
     public TaskHistoryResponse record(Task task, User changedBy, String description) {
         var history = taskHistoryRepository.save(TaskHistory.builder()
                 .task(task)
@@ -73,5 +70,9 @@ public class TaskHistoryService {
                 .map(taskHistoryMapper::toResponse)
                 .toList();
 
+    }
+
+    public void deleteAllByTaskId(Long taskId) {
+        taskHistoryRepository.deleteAllByTaskId(taskId);
     }
 }

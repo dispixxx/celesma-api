@@ -4,7 +4,7 @@ import com.disp.celesma.dto.common.AiDescriptionRequest;
 import com.disp.celesma.dto.common.AiTitleRequest;
 import com.disp.celesma.dto.task.TaskCreateRequest;
 import com.disp.celesma.dto.task.TaskResponse;
-import com.disp.celesma.dto.task.TaskStatusRequest;
+import com.disp.celesma.dto.task.TaskStatusUpdateRequest;
 import com.disp.celesma.dto.task.TaskUpdateRequest;
 import com.disp.celesma.security.UserPrincipal;
 import com.disp.celesma.service.TaskHistoryService;
@@ -26,7 +26,6 @@ import java.util.List;
 public class TaskController {
 
     private final ITaskService taskService;
-    private final TaskHistoryService taskHistoryService;
     private final IAiService aiService;
 
     // ─────────────────────────────────────────────
@@ -76,7 +75,7 @@ public class TaskController {
     @PreAuthorize("@projectSecurity.isMemberByTask(#taskId, principal)")
     public ResponseEntity<TaskResponse> changeStatus(
             @PathVariable Long taskId,
-            @Valid @RequestBody TaskStatusRequest request,
+            @Valid @RequestBody TaskStatusUpdateRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(
                 taskService.changeStatus(taskId, request.status(), principal.getUser()));
@@ -87,7 +86,7 @@ public class TaskController {
     public ResponseEntity<Void> deleteTask(
             @PathVariable Long taskId,
             @AuthenticationPrincipal UserPrincipal principal) {
-        taskService.deleteTask(taskId);
+        taskService.deleteTask(taskId,principal.getUser());
         return ResponseEntity.noContent().build();
     }
 

@@ -20,5 +20,4 @@ public record TaskResponse(
         Long projectId,
         TaskStatus status,
         TaskPriority priority
-) {
-}
+) {}

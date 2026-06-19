@@ -11,4 +11,5 @@ public record ProjectCreateRequest(
         @NotBlank(message = "Описание не может быть пустым")
         @Size(max = 500)
         String description
-) {}
+) {
+}

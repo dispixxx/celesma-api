@@ -26,7 +26,6 @@ public class ProjectController {
     public ResponseEntity<List<ProjectResponse>> getUserProjects(
             @AuthenticationPrincipal UserPrincipal principal) {
         List<ProjectResponse> projects = projectService.getUserProjects(principal.getUser());
-
         return ResponseEntity.ok(projects);
     }
 

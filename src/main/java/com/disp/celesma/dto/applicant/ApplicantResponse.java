@@ -8,6 +8,5 @@ public record ApplicantResponse(
         Long projectId,
         UserResponse user,
         LocalDate requestAt
-
 ) {
 }

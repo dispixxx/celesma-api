@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface TaskHistoryRepository extends JpaRepository<TaskHistory, Long> {
     List<TaskHistory> findByTaskIdOrderByChangedAtDesc(Long taskId);
+
+    void deleteAllByTaskId(Long taskId);
 }

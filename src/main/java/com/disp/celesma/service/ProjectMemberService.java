@@ -62,14 +62,17 @@ public class ProjectMemberService implements IProjectMemberService {
     }
 
     /**
-     * Validates that the specified user is a member of the given project.
-     * Throws {@link IllegalArgumentException} if the user is not a project member.
+     * Validates that the specified user is a member of the given project.<br>
+     * Throws {@link AccessDeniedException} if the user is not a project member.<br>
+     * Throws {@link EntityNotFoundException} if the project not found.
+     *
      *
      * @param projectId the ID of the project to check membership against
      * @param userId    the ID of the user whose membership is being validated
      */
     @Transactional(readOnly = true)
     public boolean validateIsMember(Long projectId, Long userId) {
+        getProjectEntityOrThrow(projectId); //validate project
         if (!isMember(projectId, userId)) {
             throw new AccessDeniedException(
                     "Пользователь %d не является участником проекта %d"
