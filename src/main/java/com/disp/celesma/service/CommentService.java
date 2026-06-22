@@ -1,12 +1,15 @@
 package com.disp.celesma.service;
 
+import com.disp.celesma.dto.task.comment.CommentCreateRequest;
 import com.disp.celesma.dto.task.comment.CommentResponse;
 import com.disp.celesma.mapper.CommentMapper;
 import com.disp.celesma.model.Comment;
 import com.disp.celesma.model.User;
 import com.disp.celesma.repository.CommentRepository;
 import com.disp.celesma.service.interfaces.ICommentService;
+import com.disp.celesma.service.interfaces.IProjectMemberService;
 import com.disp.celesma.service.interfaces.ITaskService;
+import com.disp.celesma.service.interfaces.IUserService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -23,7 +26,12 @@ public class CommentService implements ICommentService {
 
     private final ITaskService taskService;
 
+    private final IProjectMemberService projectMemberService;
+
+    private final IUserService userService;
+
     private final CommentMapper commentMapper;
+
 
     private Comment getCommentEntityById(Long commentId) {
         return commentRepository.findById(commentId)
@@ -39,12 +47,35 @@ public class CommentService implements ICommentService {
 
     @Override
     @Transactional
-    public CommentResponse createAndSave(String text, User author, Long taskId) {
+    public CommentResponse createAndSave(CommentCreateRequest request, String authorName, Long taskId) {
 
         var task = taskService.getTaskEntityById(taskId);
 
+        var user = userService.getUserEntityByUsername(authorName);
+
+        projectMemberService.validateIsMember(task.getProject().getId(), user.getId());
+
         var comment = Comment.builder()
-                .text(text)
+                .text(request.text())
+                .author(user)
+                .task(task)
+                .createdAt(LocalDateTime.now())
+                .build();
+        var saved = commentRepository.save(comment);
+        return commentMapper.toResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public CommentResponse createAndSave(CommentCreateRequest request, User author, Long taskId) {
+
+        var task = taskService.getTaskEntityById(taskId);
+
+
+        projectMemberService.validateIsMember(task.getProject().getId(), author.getId());
+
+        var comment = Comment.builder()
+                .text(request.text())
                 .author(author)
                 .task(task)
                 .createdAt(LocalDateTime.now())

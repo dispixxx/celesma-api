@@ -22,7 +22,9 @@ public interface ITaskService {
 
     TaskResponse changeStatus(Long taskId, TaskStatus newStatus, User caller);
 
-    void deleteTask(Long taskId,User caller);
+    TaskResponse changeStatus(Long taskId, TaskStatus newStatus, String callerUsername);
+
+    void deleteTask(Long taskId, User caller);
 
     void reassignAndHoldTasks(Long projectId, Long fromUserId, User toUser);
 }

@@ -12,7 +12,9 @@ import java.util.List;
 public interface ICommentService {
 
     @Transactional
-    CommentResponse createAndSave(String text, User author, Long TaskId);
+    CommentResponse createAndSave(CommentCreateRequest request, String senderName, Long TaskId);
+
+    CommentResponse createAndSave(CommentCreateRequest request, User author, Long TaskId);
 
     List<CommentResponse> getByTask(Long taskId);
 

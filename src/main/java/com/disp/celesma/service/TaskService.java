@@ -119,7 +119,21 @@ public class TaskService implements ITaskService {
     @Override
     @Transactional
     public TaskResponse changeStatus(Long taskId, TaskStatus newStatus, User caller) {
+        return changeStatusInner(taskId, newStatus, caller);
+    }
+
+    @Override
+    @Transactional
+    public TaskResponse changeStatus(Long taskId, TaskStatus newStatus, String callerUsername) {
+        var caller = userService.getUserEntityByUsername(callerUsername);
+        return changeStatusInner(taskId, newStatus, caller);
+    }
+
+    private TaskResponse changeStatusInner(Long taskId, TaskStatus newStatus, User caller) {
         var task = getTaskEntityById(taskId);
+
+        projectMemberService.validateIsMember(task.getProject().getId(), caller.getId());
+
         var oldStatus = task.getStatus();
 
         if (oldStatus == newStatus) return taskMapper.toResponse(task);
@@ -138,6 +152,7 @@ public class TaskService implements ITaskService {
         eventPublisher.publishEvent(new TaskStatusChangedEvent(this, saved, oldStatus, newStatus));
         return taskMapper.toResponse(saved);
     }
+
 
     //TODO: VALIDATE AND PROTECT FROM DELETING TASKS BY NON PRIVILEGED USERS
     @Override
