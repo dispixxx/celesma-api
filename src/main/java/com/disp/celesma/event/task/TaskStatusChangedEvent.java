@@ -1,9 +1,11 @@
-package com.disp.celesma.event;
+package com.disp.celesma.event.task;
 
 import com.disp.celesma.model.Task;
 import com.disp.celesma.model.enums.TaskStatus;
+import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
+@Getter
 public class TaskStatusChangedEvent extends ApplicationEvent {
 
     private final Task task;
@@ -17,7 +19,4 @@ public class TaskStatusChangedEvent extends ApplicationEvent {
         this.newStatus = newStatus;
     }
 
-    public Task getTask() { return task; }
-    public TaskStatus getOldStatus() { return oldStatus; }
-    public TaskStatus getNewStatus() { return newStatus; }
 }

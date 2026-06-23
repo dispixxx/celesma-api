@@ -3,8 +3,9 @@ package com.disp.celesma.service;
 import com.disp.celesma.dto.task.TaskCreateRequest;
 import com.disp.celesma.dto.task.TaskResponse;
 import com.disp.celesma.dto.task.TaskUpdateRequest;
-import com.disp.celesma.event.TaskCreatedEvent;
-import com.disp.celesma.event.TaskStatusChangedEvent;
+import com.disp.celesma.event.member.MemberExitedProjectEvent;
+import com.disp.celesma.event.task.TaskCreatedEvent;
+import com.disp.celesma.event.task.TaskStatusChangedEvent;
 import com.disp.celesma.mapper.TaskMapper;
 import com.disp.celesma.model.Project;
 import com.disp.celesma.model.Task;
@@ -20,7 +21,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -161,6 +165,12 @@ public class TaskService implements ITaskService {
         checkDeleteAccess(getTaskEntityById(taskId), caller);
         taskHistoryService.deleteAllByTaskId(taskId);
         taskRepository.deleteById(taskId);
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)// Выполняется ВНУТРИ текущей транзакции выхода
+    public void handleMemberExit(MemberExitedProjectEvent event) {
+        reassignAndHoldTasks(event.getProjectId(), event.getExitedUserId(), event.getCaller());
     }
 
     @Override

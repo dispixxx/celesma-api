@@ -1,17 +1,22 @@
-package com.disp.celesma.event.listener;
+package com.disp.celesma.kafka.listener;
 
-import com.disp.celesma.event.TaskCreatedEvent;
-import com.disp.celesma.event.TaskStatusChangedEvent;
+import com.disp.celesma.event.task.TaskCreatedEvent;
+import com.disp.celesma.event.task.TaskStatusChangedEvent;
 import com.disp.celesma.kafka.dto.TaskEventDto;
 import com.disp.celesma.kafka.producer.TaskEventProducer;
 import com.disp.celesma.model.Task;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
+/**
+ * Внутренний обработчик событий, который отправляет события в Kafka послеCommit
+ **/
 @Component
+@Profile("kafka")
 @RequiredArgsConstructor
 @Slf4j
 public class TaskEventKafkaListener {

@@ -1,8 +1,10 @@
-package com.disp.celesma.event;
+package com.disp.celesma.event.task;
 
 import com.disp.celesma.model.Task;
+import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
+@Getter
 public class TaskCreatedEvent extends ApplicationEvent {
 
     private final Task task;
@@ -12,5 +14,4 @@ public class TaskCreatedEvent extends ApplicationEvent {
         this.task = task;
     }
 
-    public Task getTask() { return task; }
 }

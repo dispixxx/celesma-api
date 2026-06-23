@@ -53,8 +53,8 @@ public class ProjectMemberController {
     @PreAuthorize("@projectSecurity.isMember(#projectId, principal)")
     public ResponseEntity<Void> exitProject(
             @PathVariable Long projectId,
-            @AuthenticationPrincipal UserPrincipal principal,
-            @PathVariable Long memberId) {
+            @PathVariable Long memberId,
+            @AuthenticationPrincipal UserPrincipal principal) {
         projectMemberService.exitFromProject(projectId, principal.getUser(), memberId);
         return ResponseEntity.ok().build();
     }

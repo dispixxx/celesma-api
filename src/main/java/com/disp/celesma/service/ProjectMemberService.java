@@ -1,6 +1,7 @@
 package com.disp.celesma.service;
 
 import com.disp.celesma.dto.member.MemberResponse;
+import com.disp.celesma.event.member.MemberExitedProjectEvent;
 import com.disp.celesma.mapper.MemberMapper;
 import com.disp.celesma.model.Project;
 import com.disp.celesma.model.ProjectMember;
@@ -11,6 +12,7 @@ import com.disp.celesma.repository.ProjectRepository;
 import com.disp.celesma.service.interfaces.IProjectMemberService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ public class ProjectMemberService implements IProjectMemberService {
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectRepository projectRepository;
     private final MemberMapper memberMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     Map<ProjectRole, Integer> ROLE_ORDER = Map.of(
             ProjectRole.OWNER, 1,
@@ -65,7 +68,6 @@ public class ProjectMemberService implements IProjectMemberService {
      * Validates that the specified user is a member of the given project.<br>
      * Throws {@link AccessDeniedException} if the user is not a project member.<br>
      * Throws {@link EntityNotFoundException} if the project not found.
-     *
      *
      * @param projectId the ID of the project to check membership against
      * @param userId    the ID of the user whose membership is being validated
@@ -228,12 +230,14 @@ public class ProjectMemberService implements IProjectMemberService {
         project.getMembers().remove(member);
         projectRepository.save(project);
 
+        eventPublisher.publishEvent(new MemberExitedProjectEvent(this, projectId, member.getUser().getId(), caller));
+
         //  taskService.reassignAndHoldTasks(projectId, member.getUser().getId(), caller);
     }
 
     @Transactional
     @Override
-    public void exitFromProject(Long projectId, User user, Long memberId) {
+    public void exitFromProject(Long projectId, User caller, Long memberId) {
 
         var member = getProjectMemberEntityById(memberId);
         var project = member.getProject();
@@ -244,6 +248,8 @@ public class ProjectMemberService implements IProjectMemberService {
 
         project.getMembers().remove(member);
         projectRepository.save(project);
+
+        eventPublisher.publishEvent(new MemberExitedProjectEvent(this, projectId, member.getUser().getId(), caller));
 
         //  taskService.reassignAndHoldTasks(projectId, member.getUser().getId(), caller);
     }

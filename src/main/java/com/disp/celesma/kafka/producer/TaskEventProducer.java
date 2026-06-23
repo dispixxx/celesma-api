@@ -6,10 +6,15 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
 
+/**
+ * Вывод событий в Kafka. KafkaListenerConsumer в NotificationService обработает событиые
+ * */
 @Component
+@Profile("kafka")
 @RequiredArgsConstructor
 @Slf4j
 public class TaskEventProducer {
