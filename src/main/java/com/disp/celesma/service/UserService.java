@@ -6,12 +6,14 @@ import com.disp.celesma.dto.user.UserUpdateProfileRequest;
 import com.disp.celesma.mapper.UserMapper;
 import com.disp.celesma.model.User;
 import com.disp.celesma.repository.UserRepository;
+import com.disp.celesma.s3.service.interfaces.IStorageService;
 import com.disp.celesma.service.interfaces.IUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 
@@ -20,7 +22,12 @@ import java.time.LocalDate;
 public class UserService implements IUserService {
 
     private final UserRepository userRepository;
+    /**
+     * Реализация: {@link com.disp.celesma.s3.service.S3StorageService} — s3/service/S3StorageService.java*/
+    private final IStorageService storageService;
+
     private final PasswordEncoder passwordEncoder;
+
     private final UserMapper userMapper;
 
     /**
@@ -54,6 +61,20 @@ public class UserService implements IUserService {
 
     }
 
+    @Override
+    public UserResponse updateAvatar(User user, MultipartFile file) {
+        // Удаляем старую аватарку если есть
+        if (user.getAvatarUrl() != null) {
+            storageService.deleteAvatar(user.getAvatarUrl());
+        }
+
+        String url = storageService.uploadAvatar(file, user.getUsername());
+        user.setAvatarUrl(url);
+        userRepository.save(user);
+
+        return userMapper.toResponse(user);
+    }
+
     /**
      * Retrieves a {@link User} entity from the database by username.
      *
@@ -76,7 +97,7 @@ public class UserService implements IUserService {
      */
     @Override
     public UserResponse getUserByUsername(String username) {
-        return userMapper.toResponseDto(getUserEntityByUsername(username));
+        return userMapper.toResponse(getUserEntityByUsername(username));
     }
 
 
@@ -88,7 +109,7 @@ public class UserService implements IUserService {
 
     @Override
     public UserResponse getUserById(Long uid) {
-        return userMapper.toResponseDto(getUserEntityById(uid));
+        return userMapper.toResponse(getUserEntityById(uid));
 
     }
 
@@ -135,7 +156,7 @@ public class UserService implements IUserService {
         user.setLastName(request.lastName());
         user.setBio(request.bio());
         var saved = save(user);
-        return userMapper.toResponseDto(saved);
+        return userMapper.toResponse(saved);
     }
 
 }

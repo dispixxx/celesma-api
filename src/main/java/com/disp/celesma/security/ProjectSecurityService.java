@@ -21,4 +21,8 @@ public class ProjectSecurityService {
         return projectMemberService.validateIsMember(task.getProject().getId(), principal.getUser().getId());
 
     }
+
+    public boolean isOwner(Long projectId, UserPrincipal principal) {
+        return projectMemberService.validateIsOwner(projectId, principal.getUser().getId());
+    }
 }

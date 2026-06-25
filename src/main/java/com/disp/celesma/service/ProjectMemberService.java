@@ -87,6 +87,24 @@ public class ProjectMemberService implements IProjectMemberService {
         return projectMemberRepository.existsByProjectIdAndUserId(projectId, userId);
     }
 
+    @Override
+    public boolean validateIsOwner(Long projectId, Long userId) {
+        getProjectEntityOrThrow(projectId); //validate project
+        if (!isOwner(projectId, userId)) {
+            throw new AccessDeniedException(
+                    "Пользователь %d не является владельцем проекта %d"
+                            .formatted(userId, projectId));
+        }
+        return true;
+    }
+
+    public boolean isOwner(Long projectId, Long userId) {
+        return projectMemberRepository
+                .findByProjectIdAndUserId(projectId, userId)
+                .map(m -> m.getRole() == ProjectRole.OWNER)
+                .orElse(false);
+    }
+
 
     //TODO /* APPLICANT SERVICE */
     @Transactional
@@ -253,4 +271,32 @@ public class ProjectMemberService implements IProjectMemberService {
 
         //  taskService.reassignAndHoldTasks(projectId, member.getUser().getId(), caller);
     }
+
+    @Transactional
+    public void transferOwnership(Long projectId, User currentOwner, Long newOwnerMemberId) {
+
+        ProjectMember newOwnerMember = projectMemberRepository.findById(newOwnerMemberId)
+                .orElseThrow(() -> new EntityNotFoundException("Участник не найден"));
+
+        if (!newOwnerMember.getProject().getId().equals(projectId)) {
+            throw new IllegalArgumentException("Участник не принадлежит этому проекту");
+        }
+
+        var project = newOwnerMember.getProject();
+
+        // Понижаем текущего владельца до ADMIN
+        ProjectMember currentOwnerMember = projectMemberRepository
+                .findByProjectIdAndUserId(projectId, currentOwner.getId())
+                .orElseThrow(() -> new EntityNotFoundException("Владелец не найден"));
+        currentOwnerMember.setRole(ProjectRole.ADMIN);
+
+        // Повышаем нового до OWNER
+        newOwnerMember.setRole(ProjectRole.OWNER);
+        project.setOwnerUser(newOwnerMember.getUser());
+
+        projectMemberRepository.save(currentOwnerMember);
+        projectMemberRepository.save(newOwnerMember);
+        projectRepository.save(project);
+    }
+
 }

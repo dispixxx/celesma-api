@@ -14,6 +14,7 @@ import com.disp.celesma.model.enums.TaskStatus;
 import com.disp.celesma.repository.ProjectRepository;
 import com.disp.celesma.repository.TaskRepository;
 import com.disp.celesma.service.interfaces.IProjectMemberService;
+import com.disp.celesma.service.interfaces.ITaskHistoryService;
 import com.disp.celesma.service.interfaces.ITaskService;
 import com.disp.celesma.service.interfaces.IUserService;
 import jakarta.persistence.EntityNotFoundException;
@@ -21,7 +22,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -36,7 +36,7 @@ public class TaskService implements ITaskService {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
 
-    private final TaskHistoryService taskHistoryService; //TODO INTERFACE ITaskHistoryService
+    private final ITaskHistoryService taskHistoryService;
     private final IProjectMemberService projectMemberService;
     private final IUserService userService;
 
@@ -168,13 +168,11 @@ public class TaskService implements ITaskService {
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)// Выполняется ВНУТРИ текущей транзакции выхода
     public void handleMemberExit(MemberExitedProjectEvent event) {
         reassignAndHoldTasks(event.getProjectId(), event.getExitedUserId(), event.getCaller());
     }
 
     @Override
-    @Transactional
     public void reassignAndHoldTasks(Long projectId, Long fromUserId, User toUser) {
         var tasks = taskRepository.findByProjectIdAndAssigneeId(projectId, fromUserId);
         tasks.forEach(t -> {

@@ -38,4 +38,8 @@ public interface IProjectMemberService {
     void removeMember(Long projectId, Long memberId, User user);
 
     void exitFromProject(Long projectId, User caller, Long memberId);
+
+    void transferOwnership(Long projectId, User user, Long memberId);
+
+    boolean validateIsOwner(Long projectId, Long id);
 }

@@ -2,6 +2,7 @@ package com.disp.celesma.service;
 
 import com.disp.celesma.dto.applicant.ApplicantResponse;
 import com.disp.celesma.dto.project.ProjectCreateRequest;
+import com.disp.celesma.dto.project.ProjectPreviewResponse;
 import com.disp.celesma.dto.project.ProjectResponse;
 import com.disp.celesma.dto.project.ProjectUpdateRequest;
 import com.disp.celesma.mapper.ProjectMapper;
@@ -109,7 +110,15 @@ public class ProjectService implements IProjectService {
     public List<ApplicantResponse> getApplicants(Long projectId) {
 
         return getProjectEntityById(projectId).getApplicants().stream()
-                .map(u -> new ApplicantResponse(projectId, userMapper.toResponseDto(u), LocalDate.now()))
+                .map(u -> new ApplicantResponse(projectId, userMapper.toResponse(u), LocalDate.now()))
+                .toList();
+    }
+
+    @Override
+    public List<ProjectPreviewResponse> getProjectsByApplicant(User user) {
+        var projects = projectRepository.findProjectsByApplicants(user);
+        return projects.stream()
+                .map(projectMapper::toProjectPreviewResponse)
                 .toList();
     }
 
@@ -137,7 +146,7 @@ public class ProjectService implements IProjectService {
         }
         project.getApplicants().add(user);
         projectRepository.save(project);
-        return new ApplicantResponse(projectId, userMapper.toResponseDto(user), LocalDate.now());
+        return new ApplicantResponse(projectId, userMapper.toResponse(user), LocalDate.now());
 
     }
 

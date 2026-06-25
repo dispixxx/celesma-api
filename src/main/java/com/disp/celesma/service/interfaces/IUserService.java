@@ -4,6 +4,7 @@ import com.disp.celesma.dto.auth.RegisterRequest;
 import com.disp.celesma.dto.user.UserResponse;
 import com.disp.celesma.dto.user.UserUpdateProfileRequest;
 import com.disp.celesma.model.User;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface IUserService {
     User getUserEntityByUsername(String username);
@@ -26,4 +27,6 @@ public interface IUserService {
     UserResponse updateUserProfileAndSave(User user, UserUpdateProfileRequest request);
 
     User createUserAndSave(RegisterRequest request);
+
+    UserResponse updateAvatar(User user, MultipartFile file);
 }

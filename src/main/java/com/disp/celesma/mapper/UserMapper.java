@@ -23,5 +23,5 @@ public interface UserMapper {
     @Mapping(target = "avatarUrl", source = "avatarUrl")
     @Mapping(target = "role", source = "role")
     @Mapping(target = "registrationDate", source = "registrationDate")
-    UserResponse toResponseDto(User user);
+    UserResponse toResponse(User user);
 }

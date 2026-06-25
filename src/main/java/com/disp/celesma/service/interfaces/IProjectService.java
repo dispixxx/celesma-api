@@ -2,6 +2,7 @@ package com.disp.celesma.service.interfaces;
 
 import com.disp.celesma.dto.applicant.ApplicantResponse;
 import com.disp.celesma.dto.project.ProjectCreateRequest;
+import com.disp.celesma.dto.project.ProjectPreviewResponse;
 import com.disp.celesma.dto.project.ProjectResponse;
 import com.disp.celesma.dto.project.ProjectUpdateRequest;
 import com.disp.celesma.model.Project;
@@ -25,10 +26,7 @@ public interface IProjectService {
     ProjectResponse updateProjectAndSave(Long projectId, User caller, ProjectUpdateRequest request);
     void deleteProject(Long projectId, User caller);
     List<ApplicantResponse> getApplicants(Long projectId);
-/*    void acceptApplicant(Long projectId, Long userId, User caller);
-    void declineApplicant(Long projectId, Long userId, User caller);*/
-//    ProjectResponse getProjectResponse(Long projectId, User user);
-/*    void updateMemberRole(Long projectId, Long memberId, ProjectRole newRole, User caller);
-    void removeMember(Long projectId, Long memberId, User caller);*/
+
+    List<ProjectPreviewResponse> getProjectsByApplicant(User user);
 
 }

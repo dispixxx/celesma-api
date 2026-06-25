@@ -2,6 +2,7 @@ package com.disp.celesma.mapper;
 
 import com.disp.celesma.dto.project.ProjectResponse;
 import com.disp.celesma.model.Project;
+import com.disp.celesma.dto.project.ProjectPreviewResponse;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -21,4 +22,5 @@ public interface ProjectMapper {
     ProjectResponse toResponse(Project project);
 
 
+    ProjectPreviewResponse toProjectPreviewResponse(Project project);
 }

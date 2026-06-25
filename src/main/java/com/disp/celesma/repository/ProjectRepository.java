@@ -17,4 +17,6 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     @EntityGraph(attributePaths = {"ownerUser", "members", "members.user", "applicants"})
     @Query("SELECT p FROM Project p WHERE p.id = :id")
     Optional<Project> findByIdWithOwner(Long id);
+
+    List<Project> findProjectsByApplicants(User user);
 }

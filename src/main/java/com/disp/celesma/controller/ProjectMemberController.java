@@ -58,4 +58,14 @@ public class ProjectMemberController {
         projectMemberService.exitFromProject(projectId, principal.getUser(), memberId);
         return ResponseEntity.ok().build();
     }
+
+    @PostMapping("/{memberId}/transfer-ownership")
+    @PreAuthorize("@projectSecurity.isOwner(#projectId, principal)")
+    public ResponseEntity<Void> transferOwnership(
+            @PathVariable Long projectId,
+            @PathVariable Long memberId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        projectMemberService.transferOwnership(projectId, principal.getUser(), memberId);
+        return ResponseEntity.ok().build();
+    }
 }

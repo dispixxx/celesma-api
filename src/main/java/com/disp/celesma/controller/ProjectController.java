@@ -1,8 +1,10 @@
 package com.disp.celesma.controller;
 
 import com.disp.celesma.dto.project.ProjectCreateRequest;
+import com.disp.celesma.dto.project.ProjectPreviewResponse;
 import com.disp.celesma.dto.project.ProjectResponse;
 import com.disp.celesma.dto.project.ProjectUpdateRequest;
+import com.disp.celesma.model.User;
 import com.disp.celesma.security.UserPrincipal;
 import com.disp.celesma.service.interfaces.IProjectService;
 import jakarta.validation.Valid;
@@ -63,6 +65,12 @@ public class ProjectController {
             @AuthenticationPrincipal UserPrincipal principal) {
         projectService.deleteProject(projectId, principal.getUser());
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/my-applications")
+    public ResponseEntity<List<ProjectPreviewResponse>> getProjectsByApplicant(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(projectService.getProjectsByApplicant(principal.getUser()));
     }
 
     @GetMapping("/search")

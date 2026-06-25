@@ -7,6 +7,7 @@ import com.disp.celesma.model.Task;
 import com.disp.celesma.model.TaskHistory;
 import com.disp.celesma.model.User;
 import com.disp.celesma.repository.TaskHistoryRepository;
+import com.disp.celesma.service.interfaces.ITaskHistoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -18,7 +19,7 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
-public class TaskHistoryService {
+public class TaskHistoryService implements ITaskHistoryService {
 
     private final TaskHistoryRepository taskHistoryRepository;
 
@@ -51,6 +52,8 @@ public class TaskHistoryService {
         return changes.toString().replaceAll("; $", "");
     }
 
+
+    @Override
     @Transactional(propagation = Propagation.REQUIRED)
     public TaskHistoryResponse record(Task task, User changedBy, String description) {
         var history = taskHistoryRepository.save(TaskHistory.builder()
@@ -64,6 +67,7 @@ public class TaskHistoryService {
     }
 
     // Получение истории для контроллера
+    @Override
     @Transactional(readOnly = true)
     public List<TaskHistoryResponse> getHistoryByTaskId(Long taskId) {
         return taskHistoryRepository.findByTaskIdOrderByChangedAtDesc(taskId).stream()
@@ -72,6 +76,8 @@ public class TaskHistoryService {
 
     }
 
+
+    @Override
     public void deleteAllByTaskId(Long taskId) {
         taskHistoryRepository.deleteAllByTaskId(taskId);
     }
