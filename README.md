@@ -1,4 +1,4 @@
-> ⚠️ **Deprecated** — this repo is archived and no longer maintained.
+> ⚠️ **Deprecated** — this READ.ME is archived.
 
 # Celesma API
 
