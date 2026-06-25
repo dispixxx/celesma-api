@@ -1,3 +1,5 @@
+> ⚠️ **Deprecated** — this repo is archived and no longer maintained.
+
 # Celesma API
 
 REST API для системы управления проектами с React фронтендом.
