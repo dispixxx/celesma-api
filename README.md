@@ -1,3 +1,5 @@
+> ⚠️ **Deprecated** — this READ.ME is archived.
+>
 # Celesma API
 
 REST API для системы управления проектами с React фронтендом.
