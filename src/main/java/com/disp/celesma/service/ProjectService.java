@@ -5,21 +5,29 @@ import com.disp.celesma.dto.project.ProjectCreateRequest;
 import com.disp.celesma.dto.project.ProjectPreviewResponse;
 import com.disp.celesma.dto.project.ProjectResponse;
 import com.disp.celesma.dto.project.ProjectUpdateRequest;
+import com.disp.celesma.dto.project.attachment.AttachmentResponse;
+import com.disp.celesma.mapper.AttachmentMapper;
 import com.disp.celesma.mapper.ProjectMapper;
 import com.disp.celesma.mapper.UserMapper;
 import com.disp.celesma.model.Project;
+import com.disp.celesma.model.ProjectAttachment;
 import com.disp.celesma.model.ProjectMember;
 import com.disp.celesma.model.User;
 import com.disp.celesma.model.enums.ProjectRole;
+import com.disp.celesma.repository.ProjectAttachmentRepository;
 import com.disp.celesma.repository.ProjectRepository;
+import com.disp.celesma.s3.service.interfaces.IStorageService;
 import com.disp.celesma.service.interfaces.IProjectMemberService;
 import com.disp.celesma.service.interfaces.IProjectService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 
@@ -29,12 +37,18 @@ import java.util.List;
 public class ProjectService implements IProjectService {
 
     private final ProjectRepository projectRepository;
+    private final ProjectAttachmentRepository attachmentRepository;
 
     private final IProjectMemberService projectMemberService;
+    /**
+     * Реализация: {@link com.disp.celesma.s3.service.S3StorageService} — s3/service/S3StorageService.java
+     */
+    private final IStorageService storageService;
 
     private final ProjectMapper projectMapper;
     private final UserMapper userMapper;
 
+    private final AttachmentMapper attachmentMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -58,6 +72,7 @@ public class ProjectService implements IProjectService {
                 .description(request.description().trim())
                 .ownerUser(owner)
                 .members(new HashSet<>())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         Project savedProject = projectRepository.save(project);
@@ -178,4 +193,53 @@ public class ProjectService implements IProjectService {
         }
         projectRepository.deleteById(projectId);
     }
+
+    /* FILE UPLOADER*/
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<AttachmentResponse> getAttachments(Long projectId) {
+        return attachmentRepository.findByProjectIdOrderByCreatedAtDesc(projectId)
+                .stream()
+                .map(attachmentMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public AttachmentResponse uploadAttachment(Long projectId, MultipartFile file, User user) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new EntityNotFoundException("Project not found"));
+
+        String url = storageService.uploadProjectAttachment(file, projectId);
+
+        ProjectAttachment attachment = ProjectAttachment.builder()
+                .project(project)
+                .uploadedBy(user)
+                .fileUrl(url)
+                .fileName(file.getOriginalFilename())
+                .fileSize(file.getSize())
+                .mimeType(file.getContentType())
+                .build();
+
+        var saved = attachmentRepository.save(attachment);
+        return (attachmentMapper.toResponse(saved));
+    }
+
+    @Override
+    public void deleteAttachment(Long projectId, Long attachmentId, User user) {
+        ProjectAttachment attachment = attachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new EntityNotFoundException("Attachment not found"));
+
+        // Удалять может только загрузивший или владелец проекта
+        boolean isUploader = attachment.getUploadedBy().getId().equals(user.getId());
+        boolean isOwner = projectMemberService.isPrivileged(projectId, user.getId());
+
+        if (!isUploader && !isOwner) {
+            throw new AccessDeniedException("Not allowed to delete this attachment");
+        }
+
+        storageService.deleteFile(attachment.getFileUrl());
+        attachmentRepository.delete(attachment);
+    }
+
 }

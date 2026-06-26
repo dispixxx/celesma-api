@@ -149,6 +149,18 @@ public class ProjectMemberService implements IProjectMemberService {
                 .orElse(ProjectRole.VIEWER);
     }
 
+    /**
+     * Checks whether a user has privileged permissions within the specified project.
+     * <p>
+     * A user is considered privileged if their role is
+     * {@link ProjectRole#OWNER}, {@link ProjectRole#ADMIN}, or
+     * {@link ProjectRole#MODERATOR}.
+     *
+     * @param projectId the project identifier
+     * @param userId the user identifier
+     * @return {@code true} if the user has a privileged role in the project,
+     *         {@code false} otherwise
+     */
     @Override
     @Transactional(readOnly = true)
     public boolean isPrivileged(Long projectId, Long userId) {

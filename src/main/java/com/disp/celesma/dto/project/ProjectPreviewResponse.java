@@ -7,5 +7,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  * DTO for {@link Project}
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record ProjectPreviewResponse(Long id, String name, String description) {
+public record ProjectPreviewResponse(
+        Long id,
+        String name,
+        String description
+) {
 }

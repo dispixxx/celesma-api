@@ -12,6 +12,8 @@ import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 import java.io.IOException;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -25,11 +27,50 @@ public class S3StorageService implements IStorageService {
     @Value("${storage.endpoint}")
     private String endpoint;
 
+    private static final long MAX_AVATAR_SIZE = 5 * 1024 * 1024;   // 5MB
+    private static final long MAX_FILE_SIZE   = 20 * 1024 * 1024;  // 20MB
+
+    private static final String AVATAR_KEY      = "avatars/avatar_%s%s";
+    private static final String ATTACHMENT_KEY  = "projects/%d/attachments/%s%s";
+
+    private static final Set<String> ALLOWED_FILE_TYPES = Set.of(
+            "image/jpeg", "image/png", "image/gif", "image/webp",
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain"
+    );
+
+    // ─── Публичные методы ────────────────────────────────────────────
+
+    @Override
     public String uploadAvatar(MultipartFile file, String username) {
-        validateImageFile(file);
+        validateImage(file);
+        String key = AVATAR_KEY.formatted(username, getExtension(file));
+        return upload(file, key);
+    }
 
-        String key = "avatars/" + "avatar_" + username + getExtension(file);
 
+    @Override
+    public String uploadProjectAttachment(MultipartFile file, Long projectId) {
+        validateFile(file);
+        String key = ATTACHMENT_KEY.formatted(projectId, UUID.randomUUID(), getExtension(file));
+        return upload(file, key);
+    }
+
+    @Override
+    public void deleteAvatar(String avatarUrl) {
+        delete(avatarUrl);
+    }
+
+    @Override
+    public void deleteFile(String fileUrl) {
+        delete(fileUrl);
+    }
+
+    // ─── Приватные методы ────────────────────────────────────────────
+
+    private String upload(MultipartFile file, String key) {
         try {
             s3Client.putObject(
                     PutObjectRequest.builder()
@@ -42,34 +83,35 @@ public class S3StorageService implements IStorageService {
                     RequestBody.fromInputStream(file.getInputStream(), file.getSize())
             );
         } catch (IOException e) {
-            throw new RuntimeException("Failed to upload avatar", e);
+            throw new RuntimeException("Failed to upload file: " + key, e);
         }
-
         return endpoint + "/" + bucket + "/" + key;
     }
 
-    public void deleteAvatar(String avatarUrl) {
-        if (avatarUrl == null || !avatarUrl.contains(bucket)) return;
-
-        // Вытаскиваем key из URL
-        String key = avatarUrl.substring(avatarUrl.indexOf("avatars/"));
+    private void delete(String fileUrl) {
+        if (fileUrl == null || !fileUrl.contains(bucket)) return;
+        String key = fileUrl.substring(fileUrl.indexOf(bucket) + bucket.length() + 1);
         s3Client.deleteObject(DeleteObjectRequest.builder()
                 .bucket(bucket)
                 .key(key)
                 .build());
     }
 
-    private void validateImageFile(MultipartFile file) {
+    private void validateImage(MultipartFile file) {
         if (file.isEmpty()) throw new IllegalArgumentException("File is empty");
-
+        if (file.getSize() > S3StorageService.MAX_AVATAR_SIZE) throw new IllegalArgumentException("File size must not exceed 5MB");
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
             throw new IllegalArgumentException("File must be an image");
         }
+    }
 
-        // 5MB лимит
-        if (file.getSize() > 5 * 1024 * 1024) {
-            throw new IllegalArgumentException("File size must not exceed 5MB");
+    private void validateFile(MultipartFile file) {
+        if (file.isEmpty()) throw new IllegalArgumentException("File is empty");
+        if (file.getSize() > S3StorageService.MAX_FILE_SIZE) throw new IllegalArgumentException("File size must not exceed 20MB");
+        String contentType = file.getContentType();
+        if (contentType == null || !S3StorageService.ALLOWED_FILE_TYPES.contains(contentType)) {
+            throw new IllegalArgumentException("File type not allowed: " + contentType);
         }
     }
 
@@ -78,6 +120,6 @@ public class S3StorageService implements IStorageService {
         if (original != null && original.contains(".")) {
             return original.substring(original.lastIndexOf("."));
         }
-        return ".jpg";
+        return ".bin";
     }
 }

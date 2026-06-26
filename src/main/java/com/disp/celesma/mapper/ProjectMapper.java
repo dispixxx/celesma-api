@@ -3,10 +3,7 @@ package com.disp.celesma.mapper;
 import com.disp.celesma.dto.project.ProjectResponse;
 import com.disp.celesma.model.Project;
 import com.disp.celesma.dto.project.ProjectPreviewResponse;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingConstants;
-import org.mapstruct.ReportingPolicy;
+import org.mapstruct.*;
 
 
 @Mapper(
@@ -21,6 +18,6 @@ public interface ProjectMapper {
     @Mapping(target = "members", source = "members")
     ProjectResponse toResponse(Project project);
 
-
+    @Named("toPreview")
     ProjectPreviewResponse toProjectPreviewResponse(Project project);
 }
