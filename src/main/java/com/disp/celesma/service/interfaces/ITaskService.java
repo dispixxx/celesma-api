@@ -7,6 +7,8 @@ import com.disp.celesma.dto.task.attachment.TaskAttachmentResponse;
 import com.disp.celesma.model.Task;
 import com.disp.celesma.model.User;
 import com.disp.celesma.model.enums.TaskStatus;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,4 +41,7 @@ public interface ITaskService {
 
     @Transactional
     void deleteAttachment(Long taskId, Long attachmentId, User user);
+
+    @Transactional
+    TaskResponse updateTaskTitle(Long taskId, @NotBlank(message = "Укажите название") @Size(max = 255) String title, User user);
 }

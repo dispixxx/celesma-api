@@ -2,10 +2,7 @@ package com.disp.celesma.controller;
 
 import com.disp.celesma.dto.common.AiDescriptionRequest;
 import com.disp.celesma.dto.common.AiTitleRequest;
-import com.disp.celesma.dto.task.TaskCreateRequest;
-import com.disp.celesma.dto.task.TaskResponse;
-import com.disp.celesma.dto.task.TaskStatusUpdateRequest;
-import com.disp.celesma.dto.task.TaskUpdateRequest;
+import com.disp.celesma.dto.task.*;
 import com.disp.celesma.security.UserPrincipal;
 import com.disp.celesma.service.TaskHistoryService;
 import com.disp.celesma.service.interfaces.IAiService;
@@ -69,6 +66,26 @@ public class TaskController {
             @Valid @RequestBody TaskUpdateRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(taskService.updateTask(taskId, request, principal.getUser()));
+    }
+    /**
+     * PATCH /api/v1/tasks/{taskId}/title
+     *
+     * <p>Обновляет только заголовок задачи. Доступно любому участнику проекта.
+     * После сохранения изменение автоматически рассылается всем подключённым
+     * клиентам через WebSocket-топик {@code /topic/project/{projectId}/tasks}.
+     *
+     * @param taskId    идентификатор задачи (из пути)
+     * @param request   тело запроса с новым заголовком {@link TaskTitleRequest}
+     * @param principal аутентифицированный пользователь
+     * @return {@code 200 OK} с обновлённой задачей {@link TaskResponse}
+     */
+    @PatchMapping("/tasks/{taskId}/title")
+    @PreAuthorize("@projectSecurity.isMemberByTask(#taskId, principal)")
+    public ResponseEntity<TaskResponse> updateTaskTitle(
+            @PathVariable Long taskId,
+            @RequestBody @Valid TaskTitleRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(taskService.updateTaskTitle(taskId, request.title(), principal.getUser()));
     }
 
     @PatchMapping("/tasks/{taskId}/status")

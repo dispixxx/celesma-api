@@ -25,6 +25,7 @@ import com.disp.celesma.service.interfaces.IUserService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +53,7 @@ public class TaskService implements ITaskService {
     private final TaskAttachmentRepository taskAttachmentRepository;
 
     private final TaskAttachmentMapper taskAttachmentMapper;
+    private final SimpMessagingTemplate messagingTemplate;
 
     private Project getProjectEntityOrThrow(Long projectId) {
         return projectRepository.findById(projectId)
@@ -238,6 +240,34 @@ public class TaskService implements ITaskService {
 
         storageService.deleteFile(attachment.getFileUrl());
         taskAttachmentRepository.delete(attachment);
+    }
+    /**
+     * Обновляет заголовок задачи и уведомляет участников проекта через WebSocket.
+     *
+     * <p>После сохранения публикует обновлённую задачу в топик
+     * {@code /topic/project/{projectId}/tasks}, чтобы все подключённые клиенты
+     * получили изменение без перезагрузки страницы.
+     *
+     * @param taskId      идентификатор задачи
+     * @param title       новый заголовок (не пустой, макс. 255 символов)
+     * @param currentUser пользователь, инициировавший изменение
+     * @return обновлённая задача
+     * @throws EntityNotFoundException если задача не найдена
+     */
+    @Transactional
+    @Override
+    public TaskResponse updateTaskTitle(Long taskId, String title, User currentUser) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Задача не найдена"));
+        task.setTitle(title);
+        TaskResponse response = taskMapper.toResponse(taskRepository.save(task));
+
+        // публикуем в WebSocket — тогда useKanban подхватит автоматически
+        messagingTemplate.convertAndSend(
+                "/topic/project/" + task.getProject().getId() + "/tasks",
+                response
+        );
+        return response;
     }
 
     // ─────────────────────────────────────────────
