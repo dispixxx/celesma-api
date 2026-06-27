@@ -1,7 +1,7 @@
 package com.disp.celesma.mapper;
 
 
-import com.disp.celesma.dto.project.attachment.AttachmentResponse;
+import com.disp.celesma.dto.project.attachment.ProjectAttachmentResponse;
 import com.disp.celesma.model.ProjectAttachment;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -14,7 +14,7 @@ import org.mapstruct.ReportingPolicy;
         unmappedTargetPolicy = ReportingPolicy.ERROR
 )
 
-public interface AttachmentMapper {
+public interface ProjectAttachmentMapper {
     @Mapping(target = "project", source = "project", qualifiedByName = "toPreview")
-    AttachmentResponse toResponse(ProjectAttachment attachment);
+    ProjectAttachmentResponse toResponse(ProjectAttachment attachment);
 }

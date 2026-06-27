@@ -9,4 +9,6 @@ public interface IStorageService {
 
     String uploadProjectAttachment(MultipartFile file, Long projectId);
     void deleteFile(String fileUrl);
+
+    String uploadTaskAttachment(MultipartFile file, Long taskId);
 }

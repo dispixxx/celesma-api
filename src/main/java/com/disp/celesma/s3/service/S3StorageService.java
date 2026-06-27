@@ -31,7 +31,8 @@ public class S3StorageService implements IStorageService {
     private static final long MAX_FILE_SIZE   = 20 * 1024 * 1024;  // 20MB
 
     private static final String AVATAR_KEY      = "avatars/avatar_%s%s";
-    private static final String ATTACHMENT_KEY  = "projects/%d/attachments/%s%s";
+    private static final String PROJECT_ATTACHMENT_KEY = "projects/%d/attachments/%s%s";
+    private static final String TASK_ATTACHMENT_KEY = "projects/tasks/%d/attachments/%s%s";
 
     private static final Set<String> ALLOWED_FILE_TYPES = Set.of(
             "image/jpeg", "image/png", "image/gif", "image/webp",
@@ -54,7 +55,7 @@ public class S3StorageService implements IStorageService {
     @Override
     public String uploadProjectAttachment(MultipartFile file, Long projectId) {
         validateFile(file);
-        String key = ATTACHMENT_KEY.formatted(projectId, UUID.randomUUID(), getExtension(file));
+        String key = PROJECT_ATTACHMENT_KEY.formatted(projectId, UUID.randomUUID(), getExtension(file));
         return upload(file, key);
     }
 
@@ -66,6 +67,13 @@ public class S3StorageService implements IStorageService {
     @Override
     public void deleteFile(String fileUrl) {
         delete(fileUrl);
+    }
+
+    @Override
+    public String uploadTaskAttachment(MultipartFile file, Long taskId) {
+        validateFile(file);
+        String key = TASK_ATTACHMENT_KEY.formatted(taskId, UUID.randomUUID(), getExtension(file));
+        return upload(file, key);
     }
 
     // ─── Приватные методы ────────────────────────────────────────────

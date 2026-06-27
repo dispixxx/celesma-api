@@ -5,8 +5,8 @@ import com.disp.celesma.dto.project.ProjectCreateRequest;
 import com.disp.celesma.dto.project.ProjectPreviewResponse;
 import com.disp.celesma.dto.project.ProjectResponse;
 import com.disp.celesma.dto.project.ProjectUpdateRequest;
-import com.disp.celesma.dto.project.attachment.AttachmentResponse;
-import com.disp.celesma.mapper.AttachmentMapper;
+import com.disp.celesma.dto.project.attachment.ProjectAttachmentResponse;
+import com.disp.celesma.mapper.ProjectAttachmentMapper;
 import com.disp.celesma.mapper.ProjectMapper;
 import com.disp.celesma.mapper.UserMapper;
 import com.disp.celesma.model.Project;
@@ -48,7 +48,7 @@ public class ProjectService implements IProjectService {
     private final ProjectMapper projectMapper;
     private final UserMapper userMapper;
 
-    private final AttachmentMapper attachmentMapper;
+    private final ProjectAttachmentMapper projectAttachmentMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -198,15 +198,15 @@ public class ProjectService implements IProjectService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AttachmentResponse> getAttachments(Long projectId) {
+    public List<ProjectAttachmentResponse> getAttachments(Long projectId) {
         return attachmentRepository.findByProjectIdOrderByCreatedAtDesc(projectId)
                 .stream()
-                .map(attachmentMapper::toResponse)
+                .map(projectAttachmentMapper::toResponse)
                 .toList();
     }
 
     @Override
-    public AttachmentResponse uploadAttachment(Long projectId, MultipartFile file, User user) {
+    public ProjectAttachmentResponse uploadAttachment(Long projectId, MultipartFile file, User user) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new EntityNotFoundException("Project not found"));
 
@@ -222,7 +222,7 @@ public class ProjectService implements IProjectService {
                 .build();
 
         var saved = attachmentRepository.save(attachment);
-        return (attachmentMapper.toResponse(saved));
+        return (projectAttachmentMapper.toResponse(saved));
     }
 
     @Override

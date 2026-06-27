@@ -3,16 +3,21 @@ package com.disp.celesma.service;
 import com.disp.celesma.dto.task.TaskCreateRequest;
 import com.disp.celesma.dto.task.TaskResponse;
 import com.disp.celesma.dto.task.TaskUpdateRequest;
+import com.disp.celesma.dto.task.attachment.TaskAttachmentResponse;
 import com.disp.celesma.event.member.MemberExitedProjectEvent;
 import com.disp.celesma.event.task.TaskCreatedEvent;
 import com.disp.celesma.event.task.TaskStatusChangedEvent;
+import com.disp.celesma.mapper.TaskAttachmentMapper;
 import com.disp.celesma.mapper.TaskMapper;
 import com.disp.celesma.model.Project;
 import com.disp.celesma.model.Task;
+import com.disp.celesma.model.TaskAttachment;
 import com.disp.celesma.model.User;
 import com.disp.celesma.model.enums.TaskStatus;
 import com.disp.celesma.repository.ProjectRepository;
+import com.disp.celesma.repository.TaskAttachmentRepository;
 import com.disp.celesma.repository.TaskRepository;
+import com.disp.celesma.s3.service.interfaces.IStorageService;
 import com.disp.celesma.service.interfaces.IProjectMemberService;
 import com.disp.celesma.service.interfaces.ITaskHistoryService;
 import com.disp.celesma.service.interfaces.ITaskService;
@@ -25,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,7 +48,10 @@ public class TaskService implements ITaskService {
 
     private final ApplicationEventPublisher eventPublisher;
     private final TaskMapper taskMapper;
+    private final IStorageService storageService;
+    private final TaskAttachmentRepository taskAttachmentRepository;
 
+    private final TaskAttachmentMapper taskAttachmentMapper;
 
     private Project getProjectEntityOrThrow(Long projectId) {
         return projectRepository.findById(projectId)
@@ -180,6 +189,55 @@ public class TaskService implements ITaskService {
             t.setStatus(TaskStatus.ON_HOLD);
         });
         taskRepository.saveAll(tasks);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<TaskAttachmentResponse> getAttachments(Long taskId) {
+        return taskAttachmentRepository.findByTaskIdWithDetails(taskId)
+                .stream()
+                .map(taskAttachmentMapper::toResponse)
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public TaskAttachmentResponse uploadAttachment(Long taskId, MultipartFile file, User user) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new EntityNotFoundException("Task not found"));
+
+        String url = storageService.uploadTaskAttachment(file, taskId);
+
+        TaskAttachment attachment = TaskAttachment.builder()
+                .task(task)
+                .uploadedBy(user)
+                .fileUrl(url)
+                .fileName(file.getOriginalFilename())
+                .fileSize(file.getSize())
+                .mimeType(file.getContentType())
+                .build();
+
+        var saved = taskAttachmentRepository.save(attachment);
+        return taskAttachmentMapper.toResponse(saved);
+    }
+
+    @Transactional
+    @Override
+    public void deleteAttachment(Long taskId, Long attachmentId, User user) {
+        TaskAttachment attachment = taskAttachmentRepository.findById(attachmentId)
+                .orElseThrow(() -> new EntityNotFoundException("Attachment not found"));
+
+        boolean isUploader = attachment.getUploadedBy().getId().equals(user.getId());
+        boolean isOwnerOrAdmin = projectMemberService.isPrivileged(
+                attachment.getTask().getProject().getId(), user.getId()
+        );
+
+        if (!isUploader && !isOwnerOrAdmin) {
+            throw new AccessDeniedException("Not allowed to delete this attachment");
+        }
+
+        storageService.deleteFile(attachment.getFileUrl());
+        taskAttachmentRepository.delete(attachment);
     }
 
     // ─────────────────────────────────────────────

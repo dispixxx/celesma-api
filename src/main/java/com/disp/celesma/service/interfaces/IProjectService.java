@@ -5,7 +5,7 @@ import com.disp.celesma.dto.project.ProjectCreateRequest;
 import com.disp.celesma.dto.project.ProjectPreviewResponse;
 import com.disp.celesma.dto.project.ProjectResponse;
 import com.disp.celesma.dto.project.ProjectUpdateRequest;
-import com.disp.celesma.dto.project.attachment.AttachmentResponse;
+import com.disp.celesma.dto.project.attachment.ProjectAttachmentResponse;
 import com.disp.celesma.model.Project;
 import com.disp.celesma.model.User;
 import com.disp.celesma.model.enums.ProjectRole;
@@ -31,8 +31,8 @@ public interface IProjectService {
 
     List<ProjectPreviewResponse> getProjectsByApplicant(User user);
 
-    List<AttachmentResponse> getAttachments(Long projectId);
-    AttachmentResponse uploadAttachment(Long projectId, MultipartFile file, User user);
+    List<ProjectAttachmentResponse> getAttachments(Long projectId);
+    ProjectAttachmentResponse uploadAttachment(Long projectId, MultipartFile file, User user);
     void deleteAttachment(Long projectId, Long attachmentId, User user);
 
 }

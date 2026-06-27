@@ -1,23 +1,20 @@
-package com.disp.celesma.dto.project.attachment;
+package com.disp.celesma.dto.task.attachment;
 
-import com.disp.celesma.dto.project.ProjectPreviewResponse;
+
+import com.disp.celesma.dto.task.TaskResponse;
 import com.disp.celesma.dto.user.UserResponse;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Builder;
 
 import java.time.LocalDateTime;
 
-@Builder
-public record AttachmentResponse(
+public record TaskAttachmentResponse(
         Long id,
+        TaskResponse task,
+        UserResponse uploadedBy,
         String fileUrl,
         String fileName,
         Long fileSize,
         String mimeType,
-        ProjectPreviewResponse project,
-        UserResponse uploadedBy,
-
         @JsonFormat(pattern = "dd.MM.yyyy")
-        LocalDateTime createdAt
-) {
+        LocalDateTime createdAt) {
 }
