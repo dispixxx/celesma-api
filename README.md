@@ -82,7 +82,7 @@ src/main/java/com/disp/celesma/
 - **JDK 21+**, **Maven 3.9+**
 - **Docker** и **Docker Compose** (опционально, но рекомендуется)
 - **PostgreSQL 15+** (если запускаешь без Docker)
-- **Yandex Cloud аккаунт** с Object Storage — можно запускать и без S3, фичи будут недоступны
+- **Yandex Cloud аккаунт** с Object Storage — для реальной загрузки файлов; для локального запуска подходят дефолтные значения из `application-s3.properties` (профиль `s3` должен быть активен, см. ниже)
 - **DeepSeek API key** — для AI-функций (можно заглушить)
 - **Google OAuth2 credentials** — для входа через Google (можно заглушить)
 
@@ -95,7 +95,13 @@ cd celesma-api
 docker compose up --build
 ```
 
-`docker-compose.yml` поднимает только `db` + `app` с dev-заглушками (`JWT_SECRET`, `GOOGLE_CLIENT_ID/SECRET` уже прописаны в файле, `.env` не используется). **AI (DeepSeek) и S3 в этом варианте недоступны** — их переменные не проброшены в контейнер. Чтобы включить AI/S3, добавь нужные переменные в блок `environment` сервиса `app` (см. [Конфигурацию](#конфигурация)) или запусти локально (Вариант 2).
+`docker-compose.yml` поднимает `db` + `app` с dev-заглушками (`JWT_SECRET`, `GOOGLE_CLIENT_ID/SECRET` уже прописаны в файле, `.env` не используется).
+
+⚠️ **Важно:** в `environment` сервиса `app` профиль должен включать `s3`:
+```yaml
+SPRING_PROFILES_ACTIVE: dev,s3
+```
+Бины S3 (`S3Config` и т.д.) создаются всегда, независимо от того, нужен ли S3, а их свойства (`storage.access-key` и др.) лежат в `application-s3.properties` и подключаются только вместе с профилем `s3`. Без него **приложение не запустится вообще** — `ApplicationContext` падает с ошибкой `Could not resolve placeholder 'storage.access-key'`. У самих свойств уже есть дефолты в файле, поэтому реальные AWS-ключи для локального запуска не нужны — профиля `s3` достаточно. `DEEPSEEK_API_KEY` для AI-функций тоже не проброшен в `docker-compose.yml` — без него `/tasks/ai-process` работать не будет, но старт приложения он не блокирует.
 
 После старта: API — http://localhost:8080, Swagger UI — http://localhost:8080/swagger-ui.html
 
@@ -114,15 +120,17 @@ export SPRING_DATASOURCE_URL="jdbc:postgresql://localhost:5432/celesma_db"
 export SPRING_DATASOURCE_USERNAME="postgres"
 export SPRING_DATASOURCE_PASSWORD="postgres"
 
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+mvn spring-boot:run -Dspring-boot.run.profiles=dev,s3
 ```
+
+> Профиль `s3` обязателен при любом способе запуска — без него приложение не поднимется (см. предупреждение выше). Для реальной загрузки файлов дополнительно задай `ACCESS_KEY`, `SECRET_KEY`, `STORAGE_BUCKET_NAME`, `STORAGE_ENDPOINT`, `STORAGE_REGION`.
 
 ### Вариант 3: С Kafka (профиль `kafka`)
 
 Подними Kafka (например, через `bitnami/kafka:3.7` в KRaft-режиме на порту 9092), затем:
 
 ```bash
-mvn spring-boot:run -Dspring-boot.run.profiles=dev,kafka
+mvn spring-boot:run -Dspring-boot.run.profiles=dev,s3,kafka
 ```
 
 ### Frontend
@@ -149,9 +157,11 @@ Frontend доступен на http://localhost:3000, проксирует за�
 | `JWT_SECRET` | Секрет для подписи JWT (мин. 32 символа) | Да |
 | `DEEPSEEK_API_KEY` | API-ключ DeepSeek для AI-функций | Для AI |
 | `GOOGLE_CLIENT_ID` / `_SECRET` | OAuth2 credentials Google | Для Google login |
-| `STORAGE_BUCKET_NAME` / `STORAGE_ENDPOINT` | Параметры бакета Yandex S3 | Для S3 |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | Ключи доступа к S3 | Для S3 |
-| `SPRING_PROFILES_ACTIVE` | Активные профили (`dev,kafka,s3`) | Нет |
+| `STORAGE_BUCKET_NAME` / `STORAGE_ENDPOINT` / `STORAGE_REGION` | Параметры бакета Yandex S3 | Есть дефолты |
+| `ACCESS_KEY` / `SECRET_KEY` | Ключи доступа к S3 | Есть дефолты |
+| `SPRING_PROFILES_ACTIVE` | Активные профили. **`s3` обязателен всегда** (иначе приложение не стартует), остальное — по надобности: `dev,s3` / `dev,s3,kafka` | Да |
+
+У переменных `STORAGE_*`, `ACCESS_KEY`, `SECRET_KEY` в `application-s3.properties` заданы дефолтные значения — для локального запуска без реального S3 их можно не задавать, но профиль `s3` включить обязательно.
 
 Пример `.env` — см. `.env.example` в корне репозитория.
 
