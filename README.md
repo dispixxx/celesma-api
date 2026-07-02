@@ -92,11 +92,10 @@ src/main/java/com/disp/celesma/
 git clone https://github.com/dispixxx/celesma-api.git
 cd celesma-api
 
-cp .env.example .env
-# отредактируй .env: впиши JWT_SECRET, DEEPSEEK_API_KEY, GOOGLE_CLIENT_ID/SECRET
-
-docker-compose up --build
+docker compose up --build
 ```
+
+`docker-compose.yml` поднимает только `db` + `app` с dev-заглушками (`JWT_SECRET`, `GOOGLE_CLIENT_ID/SECRET` уже прописаны в файле, `.env` не используется). **AI (DeepSeek) и S3 в этом варианте недоступны** — их переменные не проброшены в контейнер. Чтобы включить AI/S3, добавь нужные переменные в блок `environment` сервиса `app` (см. [Конфигурацию](#конфигурация)) или запусти локально (Вариант 2).
 
 После старта: API — http://localhost:8080, Swagger UI — http://localhost:8080/swagger-ui.html
 
