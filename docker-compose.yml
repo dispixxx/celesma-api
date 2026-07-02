@@ -22,13 +22,17 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: dev
+      SPRING_PROFILES_ACTIVE: dev,s3
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/celesma_db
       SPRING_DATASOURCE_USERNAME: celesma_user
       SPRING_DATASOURCE_PASSWORD: celesma_password
       JWT_SECRET: dev-secret-key-at-least-32-characters-long
       GOOGLE_CLIENT_ID: dev-client-id
       GOOGLE_CLIENT_SECRET: dev-client-secret
+      STORAGE_BUCKET_NAME: dummy-bucket
+      STORAGE_ENDPOINT: https://storage.yandexcloud.net
+      AWS_ACCESS_KEY_ID: dummy-access-key
+      AWS_SECRET_ACCESS_KEY: dummy-secret-key
     depends_on:
       db:
         condition: service_healthy
