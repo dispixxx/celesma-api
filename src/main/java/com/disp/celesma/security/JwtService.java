@@ -1,6 +1,7 @@
 package com.disp.celesma.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -34,8 +35,12 @@ public class JwtService {
     }
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
-        return extractUsername(token).equals(userDetails.getUsername())
-                && !extractClaims(token).getExpiration().before(new Date());
+        try {
+            return extractUsername(token).equals(userDetails.getUsername())
+                    && !extractClaims(token).getExpiration().before(new Date());
+        } catch (ExpiredJwtException e) {
+            return false;
+        }
     }
 
     private Claims extractClaims(String token) {
